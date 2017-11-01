@@ -157,11 +157,11 @@ def build_dataset_matrix(dataset, dictionary=None, representation='word tf', use
     Output: numpy.array with dataset pre-process using the given representation.
     """
     num_docs = len(dataset)
-    print("num_docs: " + str(num_docs))
+    # print("num_docs: " + str(num_docs))
     num_terms_dict = len(dictionary)
-    print("num_terms_dict: " + str(num_terms_dict))
+    # print("num_terms_dict: " + str(num_terms_dict))
     num_features = num_terms_dict + 1 if use_unknown else num_terms_dict
-    print("num_features: " + str(num_features))
+    # print("num_features: " + str(num_features))
 
     dataset_matrix = np.zeros((num_docs, num_features))
 

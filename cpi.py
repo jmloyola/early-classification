@@ -3,6 +3,7 @@ import pprint as pp
 import glob
 from sklearn import tree
 import numpy as np
+import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
     metadata = dict()
@@ -24,49 +25,53 @@ if __name__ == '__main__':
     #train_dataset = ut.read_raw_dataset(dataset_paths[1])
     dictionary = ut.build_dict(path=dataset_paths[1], min_word_length=3, representation=metadata['doc_representation'])
     train_data = ut.grab_data(path=dataset_paths[1], dictionary=dictionary)
-    #print(train_dataset[0][1])
-    print(type(train_data))
-    print(train_data[0])
+    # print(type(train_data))
+    # print(train_data[0])
     #print(train_dataset[0][1].split()[data[0].index(1)])
 
     X_train = ut.build_dataset_matrix(dataset=train_data, dictionary=dictionary,
                                       representation=metadata['doc_representation'])
-    print(X_train[0, :])
+    # print(X_train[0, :])
 
     y_train, unique_labels = ut.get_labels(path=dataset_paths[1])
-    print(y_train.shape)
-    print(y_train[14])
-    print(unique_labels)
+    # print(y_train.shape)
+    # print(y_train[14])
+    # print(unique_labels)
 
     print('training model...')
     clf = tree.DecisionTreeClassifier(criterion='entropy', random_state=0)
     clf = clf.fit(X_train, y_train)
-    #result = cross_val_score(clf, X_train, y_train, cv=10)
-    #print(result)
     print('training model...[DONE]')
 
-    print(str(clf.get_params()))
+    print("Model params: " + str(clf.get_params()))
 
+    print('testing model...')
     test_data = ut.grab_data(path=dataset_paths[0], dictionary=dictionary)
-    X_test = ut.build_dataset_matrix(dataset=test_data, dictionary=dictionary,
-                                     representation=metadata['doc_representation'])
     y_test, _ = ut.get_labels(path=dataset_paths[0], unique_labels=unique_labels)
 
-    predictions_test = clf.predict(X_test)
-    score = clf.score(X_test, y_test)
-
-    print("Predicted result:   " + str(predictions_test[0:5]))
-    print("Ground-True result: " + str(y_test[0:5]))
-    print("Mean accuracy:      " + str(np.mean(predictions_test[0:5] == y_test[0:5])))
-
-    print("Final score: " + str(score))
-    print("Final score: " + str(np.mean(predictions_test == y_test)))
-
     max_len_test_data = np.max([len(x) for x in test_data])
+    x = []
+    y = []
+
+    # To make the plot interactive we use plt.ion().
+    plt.ion()
+    fig = plt.figure()
     for idx in range(metadata['windows_size'], max_len_test_data, metadata['windows_size']):
         # We obtain the partial document.
         partial_test_data = [x[:idx] for x in test_data]
         X_test = ut.build_dataset_matrix(dataset=partial_test_data, dictionary=dictionary,
                                          representation=metadata['doc_representation'])
         predictions_test = clf.predict(X_test)
-        print()
+        mean_accuracy = np.mean(predictions_test == y_test)
+
+        x.append(idx)
+        y.append(mean_accuracy)
+
+        # print("Plotting results with partial documents...")
+        plt.plot(x, y)
+        plt.pause(0.01)
+        
+    while True:
+        plt.pause(0.05)
+
+        #plt.gca().lines[0].set_xdata(x); plt.gca().lines[0].set_ydata(y); plt.gca().relim(); plt.gca().autoscale_view(); plt.pause(0.05);
