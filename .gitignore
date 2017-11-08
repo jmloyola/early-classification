@@ -1,5 +1,6 @@
 dataset/
 models/
 preprocessed_dataset/
+plots/
 __pycache__/
 .idea/
