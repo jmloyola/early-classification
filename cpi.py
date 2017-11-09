@@ -7,6 +7,14 @@ import pickle
 import os
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.naive_bayes import BernoulliNB
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegression
+from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import RidgeClassifier
 
 
 def preprocessed_dataset_exists(dataset, doc_representation):
@@ -86,6 +94,33 @@ def build_path_to_plot(dataset, doc_representation, file_name, metadata):
     return plot_file_path
 
 
+def create_model(model_type, model_params):
+    clf = None
+
+    if model_type == 'DecisionTreeClassifier':
+        clf = DecisionTreeClassifier(**model_params)  # **: Unpack dictionary operator.
+    elif model_type == 'MultinomialNB':
+        clf = MultinomialNB(**model_params)
+    elif model_type == 'BernoulliNB':
+        clf = BernoulliNB()  # This model doesn't have any parameters.
+    elif model_type == 'GaussianNB':
+        clf = GaussianNB()  # This model doesn't have any parameters.
+    elif model_type == 'KNeighborsClassifier':
+        clf = KNeighborsClassifier(**model_params)
+    elif model_type == 'LinearSVC':
+        clf = LinearSVC(**model_params)
+    elif model_type == 'LogisticRegression':
+        clf = LogisticRegression(**model_params)
+    elif model_type == 'MLPClassifier':
+        clf = MLPClassifier(**model_params)
+    elif model_type == 'RandomForestClassifier':
+        clf = RandomForestClassifier(**model_params)
+    elif model_type == 'RidgeClassifier':
+        clf = RidgeClassifier(**model_params)
+
+    return clf
+
+
 def init_metadata():
     metadata = dict()
     metadata['dataset'] = 'r8-all-terms-clean'
@@ -94,30 +129,72 @@ def init_metadata():
 
     metadata['models'] = []
 
-    _model_name = 'DecisionTreeClassifier'
+    _model_name = 'RidgeClassifier'
     _model_params = dict()
-    _model_params['criterion'] = 'entropy'
+    _model_params['solver'] = 'auto'
     _model_params['random_state'] = 0
+    metadata['models'].append((_model_name, _model_params))
+
+    _model_name = 'RandomForestClassifier'
+    _model_params = dict()
+    _model_params['criterion'] = 'gini'
+    _model_params['random_state'] = 0
+    metadata['models'].append((_model_name, _model_params))
+
+    _model_name = 'MLPClassifier'
+    _model_params = dict()
+    _model_params['hidden_layer_sizes'] = 25
+    _model_params['activation'] = 'relu'
+    _model_params['solver'] = 'adam'
+    _model_params['learning_rate'] = 'constant'
+    _model_params['random_state'] = 0
+    metadata['models'].append((_model_name, _model_params))
+
+    _model_name = 'LogisticRegression'
+    _model_params = dict()
+    _model_params['C'] = 2
+    _model_params['solver'] = 'liblinear'
+    _model_params['n_jobs'] = 8
+    _model_params['random_state'] = 0
+    metadata['models'].append((_model_name, _model_params))
+
+    _model_name = 'LinearSVC'
+    _model_params = dict()
+    _model_params['C'] = 2
+    _model_params['multi_class'] = 'ovr'
+    _model_params['random_state'] = 0
+    metadata['models'].append((_model_name, _model_params))
+
+    _model_name = 'KNeighborsClassifier'
+    _model_params = dict()
+    _model_params['n_neighbors'] = 5
+    _model_params['weights'] = 'uniform'
+    _model_params['algorithm'] = 'auto'
+    _model_params['p'] = 2
+    _model_params['n_jobs'] = 8
+    metadata['models'].append((_model_name, _model_params))
+
+    _model_name = 'GaussianNB'
+    _model_params = dict()
+    metadata['models'].append((_model_name, _model_params))
+
+    _model_name = 'BernoulliNB'
+    _model_params = dict()
+    _model_params['alpha'] = 1.0
+    _model_params['binarize'] = 0.0
+    _model_params['fit_prior'] = False
+    metadata['models'].append((_model_name, _model_params))
+
+    _model_name = 'MultinomialNB'
+    _model_params = dict()
+    _model_params['alpha'] = 0.50
+    _model_params['fit_prior'] = True
     metadata['models'].append((_model_name, _model_params))
 
     _model_name = 'DecisionTreeClassifier'
     _model_params = dict()
     _model_params['criterion'] = 'gini'
     _model_params['random_state'] = 0
-    metadata['models'].append((_model_name, _model_params))
-
-    _model_name = 'DecisionTreeClassifier'
-    _model_params = dict()
-    _model_params['criterion'] = 'entropy'
-    _model_params['random_state'] = 0
-    _model_params['class_weight'] = 'balanced'
-    metadata['models'].append((_model_name, _model_params))
-
-    _model_name = 'DecisionTreeClassifier'
-    _model_params = dict()
-    _model_params['criterion'] = 'gini'
-    _model_params['random_state'] = 0
-    _model_params['class_weight'] = 'balanced'
     metadata['models'].append((_model_name, _model_params))
 
     return metadata
@@ -173,12 +250,9 @@ def main():
         print("Model: {} with params: {}".format(model_type, model_params))
         x = []
         y = []
-        clf = None
 
-        if model_type == 'DecisionTreeClassifier':
-            clf = DecisionTreeClassifier(**model_params)  # **: Unpack dictionary operator.
-        elif model_type == 'MultinomialNB':
-            clf = MultinomialNB()
+        clf = create_model(model_type, model_params)
+
         full_model_params = clf.get_params()
         print("Model params: " + str(clf.get_params()))
 
@@ -191,7 +265,7 @@ def main():
 
         classifiers.append(clf)
 
-        for percentage in range(5, 100, 5):
+        for percentage in range(5, 101, 5):
             # We obtain the partial document.
             docs_partial_len = [int(round(l*percentage/100)) for l in docs_len]
             partial_test_data = [t[:docs_partial_len[idx]] for idx, t in enumerate(test_data)]
@@ -207,14 +281,16 @@ def main():
         plt.xlabel('Percentage of the document read')
         plt.ylabel('Accuracy')
         plt.title('Classification with Partial Information')
-        plt.axis([0, 100, 0.4, 1])
+
+        min_y = min(y)
+        plt.axis([0, 100, min_y, 1])
         plt.grid(True)
         plt.legend(loc='lower right')
 
     fig1 = plt.gcf()  # get current figure
     plt.show()  # After the image is shown, this creates a new blank image.
 
-    plot_file_path = build_path_to_plot(metadata['dataset'], metadata['doc_rep'], 'DecisionTreeClassifiers', metadata)
+    plot_file_path = build_path_to_plot(metadata['dataset'], metadata['doc_rep'], 'ModelsComparison', metadata)
     fig1.savefig(plot_file_path, dpi=3000, format='pdf')
 
     '''
