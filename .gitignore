@@ -1,0 +1,7 @@
+dataset/
+models/
+preprocessed_dataset/
+plots/
+results/
+__pycache__/
+.idea/
