@@ -81,6 +81,21 @@ def save_model(dataset, doc_representation, model_type, model_parameters, model)
     return file_path
 
 
+def save_results(dataset, doc_representation, file_name, metadata, model_names, x, y):
+    file_path = 'results/{}/{}/'.format(dataset, doc_representation, file_name)
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+    results_file_path = file_path + file_name + '.pickle'
+
+    with open(results_file_path, 'wb') as fp:
+        pickle.dump(metadata, fp)
+        pickle.dump(model_names, fp)
+        pickle.dump(x, fp)
+        pickle.dump(y, fp)
+
+    return results_file_path
+
+
 def build_path_to_plot(dataset, doc_representation, file_name, metadata):
     file_path = 'plots/{}/{}/'.format(dataset, doc_representation, file_name)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -226,8 +241,7 @@ def main():
 
         save_preprocessed_dataset(metadata['dataset'], metadata['doc_rep'], dictionary, X_train, y_train, unique_labels, test_data, y_test)
 
-
-    plt.style.use('seaborn-darkgrid')
+    plt.style.use('seaborn-poster')
     # seaborn-darkgrid
     # seaborn-colorblind
     # Any of this could be: ['seaborn-paper', 'seaborn-poster', 'seaborn-darkgrid', 'fast', 'ggplot', 'seaborn-pastel',
@@ -244,12 +258,15 @@ def main():
 
     docs_len = [len(t) for t in test_data]
     classifiers = []
+    model_names = []
+    model_ys = []
     for model_tuple in metadata['models']:
         model_type = model_tuple[0]
         model_params = model_tuple[1]
         print("Model: {} with params: {}".format(model_type, model_params))
         x = []
         y = []
+        model_names.append(model_type)
 
         clf = create_model(model_type, model_params)
 
@@ -265,7 +282,7 @@ def main():
 
         classifiers.append(clf)
 
-        for percentage in range(5, 101, 5):
+        for percentage in range(1, 101, 1):
             # We obtain the partial document.
             docs_partial_len = [int(round(l*percentage/100)) for l in docs_len]
             partial_test_data = [t[:docs_partial_len[idx]] for idx, t in enumerate(test_data)]
@@ -280,18 +297,22 @@ def main():
         plt.plot(x, y, '-', label=model_type)
         plt.xlabel('Percentage of the document read')
         plt.ylabel('Accuracy')
-        plt.title('Classification with Partial Information')
+        plt.title('Classification with Partial Information {}'.format(metadata['dataset']))
 
-        min_y = min(y)
-        plt.axis([0, 100, min_y, 1])
+        # min_y = min(y)
+        plt.axis([0, 100, 0, 1])
         plt.grid(True)
-        plt.legend(loc='lower right')
+        plt.legend(loc='best')
+
+        model_ys.append(y)
 
     fig1 = plt.gcf()  # get current figure
     plt.show()  # After the image is shown, this creates a new blank image.
 
     plot_file_path = build_path_to_plot(metadata['dataset'], metadata['doc_rep'], 'ModelsComparison', metadata)
     fig1.savefig(plot_file_path, dpi=3000, format='pdf')
+
+    save_results(metadata['dataset'], metadata['doc_rep'], 'ModelsComparison', metadata, model_names, x, model_ys)
 
     '''
     max_len_test_data = np.max([len(t) for t in test_data])

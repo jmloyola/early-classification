@@ -68,7 +68,8 @@ def raw_to_pickle_dataset(raw_dataset, path):
 def build_dict(path, min_word_length=0, max_number_words=None, representation='word_tf'):
     """
     Returns a dictionary with the words of the train dataset.
-    The dictionary contains the words with the index sorting by number of times each word appear.
+    The dictionary contains the most relevant words with an index indicating its position in the list of number of times
+    each word appear.
     It should be noted that the value zero of the index is reserved for the words UNKOWN.
 
     Inputs:
@@ -154,7 +155,7 @@ def build_dataset_matrix(dataset, dictionary=None, representation='word_tf', use
                                                'character_3_gram_tf_idf', 'word_3_gram_tf', 'word_3_gram_tf_idf'].
     - use_unknown: Boolean value indicating if we should consider the unknown words.
 
-    Output: numpy.array with dataset pre-process using the given representation.
+    Output: numpy.array with the dataset pre-processed using the given representation.
     """
     num_docs = len(dataset)
     # print("num_docs: " + str(num_docs))
@@ -223,10 +224,10 @@ def get_labels(path, unique_labels=None):
 if __name__ == '__main__':
     # np_dict = get_dictionary('20ng-train-stemmed', dataset_type='cachopo')
     #save_dictionary('test_dataset')
-    dict = build_dict('dataset/raw/test_dataset.txt', 3)
+    dict = build_dict('dataset/raw/test_dataset.txt', min_word_length=3)
     data = grab_data('dataset/raw/test_dataset.txt', dict)
     print(type(data))
-    print(str(data[0]),len(data[0]))
+    print(str(data[0]), len(data[0]))
     print(dict)
     print('bye...')
 
