@@ -8,7 +8,7 @@ GLOBAL_BASE_DIR = os.getcwd()
 
 def read_raw_dataset(path):
     """"
-    Read raw dataset and returns a list of tuples (label,document) for every document in the dataset.
+    Read raw dataset and returns a list of tuples (label, document) for every document in the dataset.
 
     Inputs:
     - path: path to the file of the raw dataset
@@ -38,10 +38,10 @@ def read_raw_dataset(path):
 
 def read_pickle_dataset(path):
     """"
-    Read pickle dataset and returns a list of tuples (label,document) for every document in the dataset.
+    Read pickle dataset and returns a list of tuples (label, document) for every document in the dataset.
 
     Inputs:
-    - path: path to the file of the raw dataset
+    - path: path to the file of the pickle dataset
 
     Output: List of tuples (label, document)
     """
@@ -54,11 +54,11 @@ def read_pickle_dataset(path):
 
 def raw_to_pickle_dataset(raw_dataset, path):
     """"
-    Save the raw dataset to a standard form (list of tuples (label,document)) using pickle.
+    Save the raw dataset to a standard form, list of tuples (label,document) using pickle.
 
     Inputs:
     - raw_dataset: list containing the raw dataset tuples (label, document)
-    - path: path to the file of the raw dataset
+    - path: path to save the pickle dataset
     """
     output_file_path = os.path.join(GLOBAL_BASE_DIR, path)
     with open(output_file_path, 'wb') as fp:
@@ -69,7 +69,7 @@ def build_dict(path, min_word_length=0, max_number_words=None, representation='w
     """
     Returns a dictionary with the words of the train dataset.
     The dictionary contains the most relevant words with an index indicating its position in the list of number of times
-    each word appear.
+    each word appears.
     It should be noted that the value zero of the index is reserved for the words UNKOWN.
 
     Inputs:
