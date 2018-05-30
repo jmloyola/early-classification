@@ -15,16 +15,26 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import RidgeClassifier
+from sklearn.model_selection import ShuffleSplit
 
 
 class PartialInformationClassifier:
     def __init__(self, cpi_kwargs):
         print("Creando clase PartialInformationClassifier con los siguientes parámetros:")
         print(cpi_kwargs)
+        self.random_state = np.random.RandomState(1234)
+        self.window_size = cpi_kwargs['window_size']
+        self.train_dataset_percentage = cpi_kwargs['train_dataset_percentage']
+        self.test_dataset_percentage = cpi_kwargs['test_dataset_percentage']
 
     def split_dataset(self, Xtrain, ytrain):
         print("Splitting preprocessed dataset for the PartialInformationClassifier")
-        return None, None, None, None
+        ss = ShuffleSplit(train_size=self.train_dataset_percentage, test_size=self.test_dataset_percentage,
+                          random_state=self.random_state)
+        idx_train, idx_test = next(ss.split(X=Xtrain, y=ytrain))
+        cpi_Xtrain, cpi_ytrain = Xtrain[idx_train], ytrain[idx_train]
+        cpi_Xtest, cpi_ytest = Xtrain[idx_test], ytrain[idx_test]
+        return cpi_Xtrain, cpi_ytrain, cpi_Xtest, cpi_ytest
 
     def fit(self, Xtrain, ytrain):
         print("Training PartialInformationClassifier")

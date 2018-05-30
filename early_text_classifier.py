@@ -91,7 +91,7 @@ def main(dataset_name, preprocess_kwargs, cpi_kwargs, context_kwargs, dmc_kwargs
 if __name__ == '__main__':
     dataset_name = 'prueba'
     preprocess_kwargs = {'name': 'preprocess_kwargs', 'test': 3.0}
-    cpi_kwargs = {'name': 'cpi_kwargs', 'test': 3.0}
+    cpi_kwargs = {'window_size': 5, 'train_dataset_percentage': 0.75, 'test_dataset_percentage': 0.25, 'name': 'cpi_kwargs', 'test': 3.0}
     context_kwargs = {'number_most_common': 3, 'name': 'context_kwargs', 'test': 3.0}
     dmc_kwargs = {'name': 'dmc_kwargs', 'test': 3.0}
     performance_kwargs = {'name': 'performance_kwargs', 'test': 3.0}
