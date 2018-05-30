@@ -50,17 +50,24 @@ def fit(Xtrain, ytrain, cpi_kwargs, context_kwargs, dmc_kwargs):
     cpi.fit(cpi_Xtrain, cpi_ytrain)
     cpi_prediction = cpi.predict(cpi_Xtest)
 
-    dmc_X, dmc_y = ci.generate_dmc_dataset(cpi_Xtest, cpi_ytest, cpi_prediction, training_data_information)
+    dmc_X, dmc_y = ci.generate_dmc_dataset(cpi_Xtest, cpi_ytest, cpi_prediction, training_data_information, dmc_kwargs)
 
     dmc = DecisionClassifier(dmc_kwargs)
     dmc_Xtrain, dmc_ytrain, dmc_Xtest, dmc_ytest = dmc.split_dataset(dmc_X, dmc_y)
     dmc.fit(dmc_Xtrain, dmc_ytrain)
-    dmc_prediction = dmc.predict(dmc_Xtest)
+    dmc_prediction, _ = dmc.predict(dmc_Xtest)
     return ci, cpi, dmc
 
 
-def predict(Xtest, ytest, ci, cpi, dmc, performance_kwargs):
-    # TODO: FINISH!
+def predict(Xtest, ytest, ci, cpi, dmc):
+    training_data_information = ci.get_training_information()
+    cpi_prediction = cpi.predict(Xtest)
+    dmc_X, dmc_y = ci.generate_dmc_dataset(Xtest, ytest, cpi_prediction, training_data_information, dmc_kwargs)
+    dmc_prediction, prediction_time = dmc.predict(dmc_X)
+    return cpi_prediction, dmc_prediction, prediction_time
+
+
+def score(ytest, cpi_prediction, dmc_prediction, prediction_time, performance_kwargs):
     return
 
 
@@ -71,7 +78,9 @@ def main(dataset_name, preprocess_kwargs, cpi_kwargs, context_kwargs, dmc_kwargs
     Xtrain, ytrain, Xtest, ytest = split_dataset(data)
 
     ci, cpi, dmc = fit(Xtrain, ytrain, cpi_kwargs, context_kwargs, dmc_kwargs)
-    predict(Xtest, ytest, ci, cpi, dmc, performance_kwargs)
+    cpi_prediction, dmc_prediction, prediction_time = predict(Xtest, ytest, ci, cpi, dmc)
+
+    score(ytest, cpi_prediction, dmc_prediction, prediction_time, performance_kwargs)
 
 
 if __name__ == '__main__':
