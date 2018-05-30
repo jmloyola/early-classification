@@ -246,14 +246,14 @@ def main():
 
         dictionary = ut.build_dict(path=dataset_paths[1], min_word_length=3,
                                    representation=metadata['doc_rep'])
-        train_data = ut.grab_data(path=dataset_paths[1], dictionary=dictionary)
+        train_data = ut.transform_into_numeric_array(path=dataset_paths[1], dictionary=dictionary)
 
         X_train = ut.build_dataset_matrix(dataset=train_data, dictionary=dictionary,
                                           representation=metadata['doc_rep'])
 
         y_train, unique_labels = ut.get_labels(path=dataset_paths[1])
 
-        test_data = ut.grab_data(path=dataset_paths[0], dictionary=dictionary)
+        test_data = ut.transform_into_numeric_array(path=dataset_paths[0], dictionary=dictionary)
         y_test, _ = ut.get_labels(path=dataset_paths[0], unique_labels=unique_labels)
 
         save_preprocessed_dataset(metadata['dataset'], metadata['doc_rep'], dictionary, X_train, y_train, unique_labels, test_data, y_test)
@@ -330,72 +330,6 @@ def main():
     fig1.savefig(plot_file_path, dpi=3000, format='pdf')
 
     save_results(metadata['dataset'], metadata['doc_rep'], 'ModelsComparison', metadata, model_names, x, model_ys)
-
-    '''
-    max_len_test_data = np.max([len(t) for t in test_data])
-    x = []
-    y = []
-    
-    fig = plt.figure()
-    for idx in range(metadata['windows_size'], max_len_test_data, metadata['windows_size']):
-        # We obtain the partial document.
-        partial_test_data = [t[:idx] for t in test_data]
-        X_test = ut.build_dataset_matrix(dataset=partial_test_data, dictionary=dictionary,
-                                         representation=metadata['doc_rep'])
-        predictions_test = clf.predict(X_test)
-        mean_accuracy = np.mean(predictions_test == y_test)
-
-        x.append(idx)
-        y.append(mean_accuracy)
-
-    plt.plot(x, y, '-')
-    plt.show()
-    # plt.savefig(fname='', dpi=3000, format='pdf')
-    '''
-
-    '''
-    plt.style.use('seaborn-darkgrid')
-    # seaborn-darkgrid
-    # seaborn-colorblind
-    # Any of this could be: ['seaborn-paper', 'seaborn-poster', 'seaborn-darkgrid', 'fast', 'ggplot', 'seaborn-pastel',
-    # 'bmh', 'seaborn-deep', 'fivethirtyeight', 'grayscale', 'seaborn', 'seaborn-talk', 'seaborn-bright',
-    # 'seaborn-white', 'seaborn-ticks', 'seaborn-dark-palette', 'seaborn-dark', '_classic_test', 'seaborn-colorblind',
-    # 'dark_background', 'seaborn-whitegrid', 'seaborn-notebook', 'Solarize_Light2', 'seaborn-muted', 'classic']
-
-    # To make the plot non-interactive we use plt.ioff().
-    # This lets us plot at the end of the program and make block the execution until we close the plotting windows
-    plt.ioff()
-    # plt.ion()
-    fig = plt.figure()
-
-    docs_len = [len(t) for t in test_data]
-    for model_tuple in metadata['models']:
-        model_type = model_tuple[0]
-        x = []
-        y = []
-
-        for percentage in range(5, 100, 5):
-            # We obtain the partial document.
-            docs_partial_len = [int(round(l*percentage/100)) for l in docs_len]
-            partial_test_data = [t[:docs_partial_len[idx]] for idx, t in enumerate(test_data)]
-            X_test = ut.build_dataset_matrix(dataset=partial_test_data, dictionary=dictionary,
-                                             representation=metadata['doc_rep'])
-            predictions_test = clf.predict(X_test)
-            mean_accuracy = np.mean(predictions_test == y_test)
-
-            x.append(percentage)
-            y.append(mean_accuracy)
-
-        plt.plot(x, y, '-', label=model_type)
-        plt.xlabel('Percentage of the document read')
-        plt.ylabel('Accuracy')
-        plt.title('Classification with Partial Information')
-        plt.axis([0, 100, 0, 1])
-        plt.grid(True)
-        plt.legend(loc='lower right')
-
-    plt.show()
-    '''
 
 
 if __name__ == '__main__':

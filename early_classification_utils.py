@@ -120,26 +120,44 @@ def build_dict(path, min_word_length=0, max_number_words=None, representation='w
     return worddict
 
 
-def grab_data(path, dictionary):
+def transform_into_numeric_array(path, dictionary):
     """
-    Given the path to a dataset, this function construct a list with the words replaced for the index given by the
+    Given the path to a dataset, this function transform a list of documents with a numpy array of shape (num_docs,
+    max_length+1), where the words are replaced for the index given by the
     dictionary.
 
     Inputs:
     - path: path to the file containing the raw dataset.
     - dictionary: dictionary with the words that matter.
 
-    Output: List of documents with the words replaced for the index given by the dictionary.
+    Output: Numpy array of shape (num_docs, max_length+1) of documents with the words replaced for the index given by
+    the dictionary.
+
+    Note: The index the dictionary gives is the position of the word if we were to arrange them from more to less taking
+    into account the number of occurrences of every words in the training dataset.
+    The number 0 is reserved for the UNKOWN token and the number -1 is reserved to indicate the end of the document.
+
     """
     dataset = read_raw_dataset(path)
-    documents = [x[1] for x in dataset]
+    num_docs = len(dataset)
 
-    seqs = [None] * len(documents)
-    for idx, ss in enumerate(documents):
-        words = ss.strip().lower().split()
+    seqs = [None] * num_docs
+    max_length = 0
+    for idx, line in enumerate(dataset):
+        document = line[1]
+        words = document.strip().lower().split()
         seqs[idx] = [dictionary[w] if w in dictionary else 0 for w in words]
+        length_doc = len(words)
+        if max_length < length_doc:
+            max_length = length_doc
 
-    return seqs
+    preprocess_dataset = np.zeros((num_docs, max_length+1), dtype=int)
+    for idx in range(num_docs):
+        length_doc = len(seqs[idx])
+        preprocess_dataset[idx, 0:length_doc] = seqs[idx]
+        preprocess_dataset[idx, length_doc] = -1
+
+    return preprocess_dataset
 
 
 def build_dataset_matrix(dataset, dictionary=None, representation='word_tf', use_unknown=True):
@@ -225,7 +243,7 @@ if __name__ == '__main__':
     # np_dict = get_dictionary('20ng-train-stemmed', dataset_type='cachopo')
     #save_dictionary('test_dataset')
     dict = build_dict('dataset/raw/test_dataset.txt', min_word_length=3)
-    data = grab_data('dataset/raw/test_dataset.txt', dict)
+    data = transform_into_numeric_array('dataset/raw/test_dataset.txt', dict)
     print(type(data))
     print(str(data[0]), len(data[0]))
     print(dict)
