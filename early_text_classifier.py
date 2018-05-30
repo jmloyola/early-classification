@@ -45,19 +45,19 @@ def preprocess_dataset(dataset_name):
     Xtest = ut.transform_into_numeric_array(path=test_path, dictionary=dictionary)
     ytest, _ = ut.get_labels(path=test_path, unique_labels=unique_labels)
 
-    return Xtrain, ytrain, Xtest, ytest
+    return Xtrain, ytrain, Xtest, ytest, dictionary
 
 
-def fit(Xtrain, ytrain, cpi_kwargs, context_kwargs, dmc_kwargs):
+def fit(Xtrain, ytrain, cpi_kwargs, context_kwargs, dmc_kwargs, dictionary):
     ci = ContextInformation(context_kwargs)
-    training_data_information = ci.get_training_information(Xtrain, ytrain)
+    ci.get_training_information(Xtrain, ytrain, dictionary)
 
     cpi = PartialInformationClassifier(cpi_kwargs)
     cpi_Xtrain, cpi_ytrain, cpi_Xtest, cpi_ytest = cpi.split_dataset(Xtrain, ytrain)
     cpi.fit(cpi_Xtrain, cpi_ytrain)
     cpi_prediction = cpi.predict(cpi_Xtest)
 
-    dmc_X, dmc_y = ci.generate_dmc_dataset(cpi_Xtest, cpi_ytest, cpi_prediction, training_data_information, dmc_kwargs)
+    dmc_X, dmc_y = ci.generate_dmc_dataset(cpi_Xtest, cpi_ytest, cpi_prediction, dmc_kwargs)
 
     dmc = DecisionClassifier(dmc_kwargs)
     dmc_Xtrain, dmc_ytrain, dmc_Xtest, dmc_ytest = dmc.split_dataset(dmc_X, dmc_y)
@@ -67,9 +67,8 @@ def fit(Xtrain, ytrain, cpi_kwargs, context_kwargs, dmc_kwargs):
 
 
 def predict(Xtest, ytest, ci, cpi, dmc):
-    training_data_information = ci.get_training_information()
     cpi_prediction = cpi.predict(Xtest)
-    dmc_X, dmc_y = ci.generate_dmc_dataset(Xtest, ytest, cpi_prediction, training_data_information, dmc_kwargs)
+    dmc_X, dmc_y = ci.generate_dmc_dataset(Xtest, ytest, cpi_prediction, dmc_kwargs)
     dmc_prediction, prediction_time = dmc.predict(dmc_X)
     return cpi_prediction, dmc_prediction, prediction_time
 
@@ -81,9 +80,9 @@ def score(ytest, cpi_prediction, dmc_prediction, prediction_time, performance_kw
 def main(dataset_name, preprocess_kwargs, cpi_kwargs, context_kwargs, dmc_kwargs, performance_kwargs):
     print_params_information(dataset_name, preprocess_kwargs, cpi_kwargs, context_kwargs, dmc_kwargs,
                              performance_kwargs)
-    Xtrain, ytrain, Xtest, ytest = preprocess_dataset(dataset_name)
+    Xtrain, ytrain, Xtest, ytest, dictionary = preprocess_dataset(dataset_name)
 
-    ci, cpi, dmc = fit(Xtrain, ytrain, cpi_kwargs, context_kwargs, dmc_kwargs)
+    ci, cpi, dmc = fit(Xtrain, ytrain, cpi_kwargs, context_kwargs, dmc_kwargs, dictionary)
     cpi_prediction, dmc_prediction, prediction_time = predict(Xtest, ytest, ci, cpi, dmc)
 
     score(ytest, cpi_prediction, dmc_prediction, prediction_time, performance_kwargs)
@@ -93,7 +92,7 @@ if __name__ == '__main__':
     dataset_name = 'prueba'
     preprocess_kwargs = {'name': 'preprocess_kwargs', 'test': 3.0}
     cpi_kwargs = {'name': 'cpi_kwargs', 'test': 3.0}
-    context_kwargs = {'name': 'context_kwargs', 'test': 3.0}
+    context_kwargs = {'number_most_common': 3, 'name': 'context_kwargs', 'test': 3.0}
     dmc_kwargs = {'name': 'dmc_kwargs', 'test': 3.0}
     performance_kwargs = {'name': 'performance_kwargs', 'test': 3.0}
     main(dataset_name, preprocess_kwargs, cpi_kwargs, context_kwargs, dmc_kwargs, performance_kwargs)
