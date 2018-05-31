@@ -2,6 +2,7 @@ import early_classification_utils as ut
 import pprint as pp
 import glob
 import numpy as np
+from scipy import sparse
 import matplotlib.pyplot as plt
 import pickle
 import os
@@ -19,13 +20,39 @@ from sklearn.model_selection import ShuffleSplit
 
 
 class PartialInformationClassifier:
-    def __init__(self, cpi_kwargs):
+    def __init__(self, cpi_kwargs, dictionary):
         print("Creando clase PartialInformationClassifier con los siguientes parámetros:")
         print(cpi_kwargs)
         self.random_state = np.random.RandomState(1234)
         self.window_size = cpi_kwargs['window_size']
         self.train_dataset_percentage = cpi_kwargs['train_dataset_percentage']
         self.test_dataset_percentage = cpi_kwargs['test_dataset_percentage']
+        self.doc_rep = cpi_kwargs['doc_rep']
+        self.model_type = cpi_kwargs['model_type']
+        self.model_params = cpi_kwargs['cpi_model_params']
+        self.dictionary = dictionary
+        if self.model_type == 'DecisionTreeClassifier':
+            self.clf = DecisionTreeClassifier(**self.model_params)  # **: Unpack dictionary operator.
+        elif self.model_type == 'MultinomialNB':
+            self.clf = MultinomialNB(**self.model_params)
+        elif self.model_type == 'BernoulliNB':
+            self.clf = BernoulliNB()  # This model doesn't have any parameters.
+        elif self.model_type == 'GaussianNB':
+            self.clf = GaussianNB()  # This model doesn't have any parameters.
+        elif self.model_type == 'KNeighborsClassifier':
+            self.clf = KNeighborsClassifier(**self.model_params)
+        elif self.model_type == 'LinearSVC':
+            self.clf = LinearSVC(**self.model_params)
+        elif self.model_type == 'LogisticRegression':
+            self.clf = LogisticRegression(**self.model_params)
+        elif self.model_type == 'MLPClassifier':
+            self.clf = MLPClassifier(**self.model_params)
+        elif self.model_type == 'RandomForestClassifier':
+            self.clf = RandomForestClassifier(**self.model_params)
+        elif self.model_type == 'RidgeClassifier':
+            self.clf = RidgeClassifier(**self.model_params)
+        else:
+            self.clf = None
 
     def split_dataset(self, Xtrain, ytrain):
         print("Splitting preprocessed dataset for the PartialInformationClassifier")
@@ -36,8 +63,32 @@ class PartialInformationClassifier:
         cpi_Xtest, cpi_ytest = Xtrain[idx_test], ytrain[idx_test]
         return cpi_Xtrain, cpi_ytrain, cpi_Xtest, cpi_ytest
 
+    def get_document_representation(self, data):
+        # TODO: Implement tf-idf representation.
+        num_docs = len(data)
+        num_features = len(self.dictionary) + 1  # We consider de UNKOWN token.
+        i = []
+        j = []
+        v = []
+        for idx, row in enumerate(data):
+            unique, counts = np.unique(row, return_counts=True)
+
+            index_to_delete = np.where((unique == -1) | (unique == -2))
+            unique = np.delete(unique, index_to_delete)
+            counts = np.delete(counts, index_to_delete)
+
+            i.extend([idx] * len(unique))
+            j.extend(unique.tolist())
+            v.extend(counts.tolist())
+        sparse_matrix = sparse.coo_matrix((v, (i, j)), shape=(num_docs, num_features)).tocsr()
+
+        return sparse_matrix
+
     def fit(self, Xtrain, ytrain):
         print("Training PartialInformationClassifier")
+        Xtrain = self.get_document_representation(Xtrain)
+        self.clf.fit(Xtrain, ytrain)
+
 
     def predict(self, Xtest):
         print("Predicting with PartialInformationClassifier")

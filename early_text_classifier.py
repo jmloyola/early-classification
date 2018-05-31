@@ -52,7 +52,7 @@ def fit(Xtrain, ytrain, cpi_kwargs, context_kwargs, dmc_kwargs, dictionary):
     ci = ContextInformation(context_kwargs)
     ci.get_training_information(Xtrain, ytrain, dictionary)
 
-    cpi = PartialInformationClassifier(cpi_kwargs)
+    cpi = PartialInformationClassifier(cpi_kwargs, dictionary)
     cpi_Xtrain, cpi_ytrain, cpi_Xtest, cpi_ytest = cpi.split_dataset(Xtrain, ytrain)
     cpi.fit(cpi_Xtrain, cpi_ytrain)
     cpi_prediction = cpi.predict(cpi_Xtest)
@@ -90,9 +90,28 @@ def main(dataset_name, preprocess_kwargs, cpi_kwargs, context_kwargs, dmc_kwargs
 
 if __name__ == '__main__':
     dataset_name = 'prueba'
-    preprocess_kwargs = {'name': 'preprocess_kwargs', 'test': 3.0}
-    cpi_kwargs = {'window_size': 5, 'train_dataset_percentage': 0.75, 'test_dataset_percentage': 0.25, 'name': 'cpi_kwargs', 'test': 3.0}
-    context_kwargs = {'number_most_common': 3, 'name': 'context_kwargs', 'test': 3.0}
-    dmc_kwargs = {'name': 'dmc_kwargs', 'test': 3.0}
-    performance_kwargs = {'name': 'performance_kwargs', 'test': 3.0}
+    preprocess_kwargs = {'name': 'preprocess_kwargs',
+                         'test': 3.0}
+
+    cpi_model_params = dict()
+    cpi_model_params['C'] = 2
+    cpi_model_params['multi_class'] = 'ovr'
+    cpi_model_params['random_state'] = 0
+    cpi_kwargs = {'window_size': 5,
+                  'train_dataset_percentage': 0.75,
+                  'test_dataset_percentage': 0.25,
+                  'doc_rep': 'word_tf',
+                  'model_type': 'LinearSVC',
+                  'cpi_model_params': cpi_model_params}
+
+    context_kwargs = {'number_most_common': 3,
+                      'name': 'context_kwargs',
+                      'test': 3.0}
+
+    dmc_kwargs = {'name': 'dmc_kwargs',
+                  'test': 3.0}
+
+    performance_kwargs = {'name': 'performance_kwargs',
+                          'test': 3.0}
+
     main(dataset_name, preprocess_kwargs, cpi_kwargs, context_kwargs, dmc_kwargs, performance_kwargs)

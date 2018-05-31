@@ -1,6 +1,7 @@
 import os
 import pickle
 import numpy as np
+import glob
 from collections import Counter
 
 GLOBAL_BASE_DIR = os.getcwd()
@@ -151,7 +152,7 @@ def transform_into_numeric_array(path, dictionary):
         if max_length < length_doc:
             max_length = length_doc
 
-    preprocess_dataset = np.zeros((num_docs, max_length+1), dtype=int)
+    preprocess_dataset = -2*np.ones((num_docs, max_length+1), dtype=int)
     for idx in range(num_docs):
         length_doc = len(seqs[idx])
         preprocess_dataset[idx, 0:length_doc] = seqs[idx]
@@ -237,6 +238,16 @@ def get_labels(path, unique_labels=None):
         final_labels[idx] = ul.index(l)
 
     return final_labels, ul
+
+
+def model_exists(dataset, doc_representation, model_type, model_parameters):
+    possible_files = glob.glob('models/{}/{}/{}/*.pickle'.format(dataset, doc_representation, model_type))
+    for file in possible_files:
+        with open(file, 'rb') as f:
+            loaded_parameters = pickle.load(f)
+            if loaded_parameters == model_parameters:
+                return True, file
+    return False, None
 
 
 if __name__ == '__main__':
