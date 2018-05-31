@@ -31,6 +31,7 @@ class PartialInformationClassifier:
         self.model_type = cpi_kwargs['model_type']
         self.model_params = cpi_kwargs['cpi_model_params']
         self.dictionary = dictionary
+        self.step_size = cpi_kwargs['step_size']
         if self.model_type == 'DecisionTreeClassifier':
             self.clf = DecisionTreeClassifier(**self.model_params)  # **: Unpack dictionary operator.
         elif self.model_type == 'MultinomialNB':
@@ -89,10 +90,33 @@ class PartialInformationClassifier:
         Xtrain = self.get_document_representation(Xtrain)
         self.clf.fit(Xtrain, ytrain)
 
-
     def predict(self, Xtest):
         print("Predicting with PartialInformationClassifier")
-        return None
+        # Remeber that we used the number -1 to represent the end of the document.
+        # Here we search for this token.
+        # np.where gives us the index of rows and columns where the condition is True.
+        # In this case, where are not interested in the rows indices.
+        _, docs_len = np.where(Xtest == -1)
+        num_docs = len(Xtest)
+        percentages = []
+        preds = []
+        # TODO: Change initial point.
+        for p in range(10, 101, self.step_size):
+            # We obtain the partial document.
+            docs_partial_len = np.round(docs_len * p / 100).astype(int)
+            max_length = np.max(docs_partial_len)
+            partial_Xtest = -2*np.ones((num_docs, max_length+1), dtype=int)
+            for idx, pl in enumerate(docs_partial_len):
+                partial_Xtest[idx, 0:pl] = Xtest[idx, 0:pl]
+                partial_Xtest[idx, pl] = -1
+            partial_Xtest = self.get_document_representation(partial_Xtest)
+            predictions_test = self.clf.predict(partial_Xtest)
+
+            percentages.append(p)
+            preds.append(predictions_test)
+        percentages = np.array(percentages)
+        preds = np.array(preds)
+        return percentages, preds
 
 
 def preprocessed_dataset_exists(dataset, doc_representation):

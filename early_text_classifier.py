@@ -55,9 +55,9 @@ def fit(Xtrain, ytrain, cpi_kwargs, context_kwargs, dmc_kwargs, dictionary):
     cpi = PartialInformationClassifier(cpi_kwargs, dictionary)
     cpi_Xtrain, cpi_ytrain, cpi_Xtest, cpi_ytest = cpi.split_dataset(Xtrain, ytrain)
     cpi.fit(cpi_Xtrain, cpi_ytrain)
-    cpi_prediction = cpi.predict(cpi_Xtest)
+    cpi_percentages, cpi_predictions = cpi.predict(cpi_Xtest)
 
-    dmc_X, dmc_y = ci.generate_dmc_dataset(cpi_Xtest, cpi_ytest, cpi_prediction, dmc_kwargs)
+    dmc_X, dmc_y = ci.generate_dmc_dataset(cpi_Xtest, cpi_ytest, cpi_predictions, dmc_kwargs)
 
     dmc = DecisionClassifier(dmc_kwargs)
     dmc_Xtrain, dmc_ytrain, dmc_Xtest, dmc_ytest = dmc.split_dataset(dmc_X, dmc_y)
@@ -67,10 +67,11 @@ def fit(Xtrain, ytrain, cpi_kwargs, context_kwargs, dmc_kwargs, dictionary):
 
 
 def predict(Xtest, ytest, ci, cpi, dmc):
-    cpi_prediction = cpi.predict(Xtest)
-    dmc_X, dmc_y = ci.generate_dmc_dataset(Xtest, ytest, cpi_prediction, dmc_kwargs)
-    dmc_prediction, prediction_time = dmc.predict(dmc_X)
-    return cpi_prediction, dmc_prediction, prediction_time
+    #cpi_prediction = cpi.predict(Xtest)
+    #dmc_X, dmc_y = ci.generate_dmc_dataset(Xtest, ytest, cpi_prediction, dmc_kwargs)
+    #dmc_prediction, prediction_time = dmc.predict(dmc_X)
+    #return cpi_prediction, dmc_prediction, prediction_time
+    return None, None, None
 
 
 def score(ytest, cpi_prediction, dmc_prediction, prediction_time, performance_kwargs):
@@ -102,7 +103,8 @@ if __name__ == '__main__':
                   'test_dataset_percentage': 0.25,
                   'doc_rep': 'word_tf',
                   'model_type': 'LinearSVC',
-                  'cpi_model_params': cpi_model_params}
+                  'cpi_model_params': cpi_model_params,
+                  'step_size': 50}
 
     context_kwargs = {'number_most_common': 3,
                       'name': 'context_kwargs',
