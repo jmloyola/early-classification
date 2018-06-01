@@ -31,6 +31,7 @@ class PartialInformationClassifier:
         self.model_type = cpi_kwargs['model_type']
         self.model_params = cpi_kwargs['cpi_model_params']
         self.dictionary = dictionary
+        self.initial_step = cpi_kwargs['initial_step']
         self.step_size = cpi_kwargs['step_size']
         if self.model_type == 'DecisionTreeClassifier':
             self.clf = DecisionTreeClassifier(**self.model_params)  # **: Unpack dictionary operator.
@@ -92,16 +93,15 @@ class PartialInformationClassifier:
 
     def predict(self, Xtest):
         print("Predicting with PartialInformationClassifier")
-        # Remeber that we used the number -1 to represent the end of the document.
+        num_docs = len(Xtest)
+        # Remember that we used the number -1 to represent the end of the document.
         # Here we search for this token.
         # np.where gives us the index of rows and columns where the condition is True.
         # In this case, where are not interested in the rows indices.
         _, docs_len = np.where(Xtest == -1)
-        num_docs = len(Xtest)
         percentages = []
         preds = []
-        # TODO: Change initial point.
-        for p in range(10, 101, self.step_size):
+        for p in range(self.initial_step, 101, self.step_size):
             # We obtain the partial document.
             docs_partial_len = np.round(docs_len * p / 100).astype(int)
             max_length = np.max(docs_partial_len)

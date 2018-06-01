@@ -1,8 +1,5 @@
 import early_classification_utils as ut
 import glob
-import numpy as np
-import pickle
-import os
 from context_information import ContextInformation
 from partial_information_classifier import PartialInformationClassifier
 from decision_classifier import DecisionClassifier
@@ -67,11 +64,10 @@ def fit(Xtrain, ytrain, cpi_kwargs, context_kwargs, dmc_kwargs, dictionary):
 
 
 def predict(Xtest, ytest, ci, cpi, dmc):
-    #cpi_prediction = cpi.predict(Xtest)
-    #dmc_X, dmc_y = ci.generate_dmc_dataset(Xtest, ytest, cpi_prediction, dmc_kwargs)
-    #dmc_prediction, prediction_time = dmc.predict(dmc_X)
-    #return cpi_prediction, dmc_prediction, prediction_time
-    return None, None, None
+    cpi_percentages, cpi_predictions = cpi.predict(Xtest)
+    dmc_X, dmc_y = ci.generate_dmc_dataset(Xtest, ytest, cpi_predictions, dmc_kwargs)
+    dmc_prediction, prediction_time = dmc.predict(dmc_X)
+    return cpi_percentages, cpi_predictions, dmc_prediction, prediction_time
 
 
 def score(ytest, cpi_prediction, dmc_prediction, prediction_time, performance_kwargs):
@@ -84,13 +80,14 @@ def main(dataset_name, preprocess_kwargs, cpi_kwargs, context_kwargs, dmc_kwargs
     Xtrain, ytrain, Xtest, ytest, dictionary = preprocess_dataset(dataset_name)
 
     ci, cpi, dmc = fit(Xtrain, ytrain, cpi_kwargs, context_kwargs, dmc_kwargs, dictionary)
-    cpi_prediction, dmc_prediction, prediction_time = predict(Xtest, ytest, ci, cpi, dmc)
+    cpi_percentages, cpi_predictions, dmc_prediction, prediction_time = predict(Xtest, ytest, ci, cpi, dmc)
 
-    score(ytest, cpi_prediction, dmc_prediction, prediction_time, performance_kwargs)
+    score(ytest, cpi_predictions, dmc_prediction, prediction_time, performance_kwargs)
 
 
 if __name__ == '__main__':
     dataset_name = 'prueba'
+    #dataset_name = 'r8-all-terms-clean'
     preprocess_kwargs = {'name': 'preprocess_kwargs',
                          'test': 3.0}
 
@@ -104,11 +101,12 @@ if __name__ == '__main__':
                   'doc_rep': 'word_tf',
                   'model_type': 'LinearSVC',
                   'cpi_model_params': cpi_model_params,
-                  'step_size': 50}
+                  'initial_step': 50,
+                  'step_size': 49}
 
     context_kwargs = {'number_most_common': 3,
-                      'name': 'context_kwargs',
-                      'test': 3.0}
+                      'initial_step': 50,
+                      'step_size': 49}
 
     dmc_kwargs = {'name': 'dmc_kwargs',
                   'test': 3.0}
