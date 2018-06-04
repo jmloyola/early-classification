@@ -54,8 +54,16 @@ class DecisionClassifier:
             print("The training-test splits must sum to one or less.")
         return X[:, 0:num_training, :], y[:, 0:num_training], X[:, num_training:, :], y[:, num_training:]
 
+    def flatten_dataset(self, X, y):
+        num_steps, num_docs, num_features = X.shape
+        new_X = X.reshape((num_steps * num_docs, num_features))
+        new_y = y.reshape((num_steps * num_docs))
+        return new_X, new_y
+
     def fit(self, Xtrain, ytrain):
         print("Training PartialInformationClassifier")
+        Xtrain, ytrain = self.flatten_dataset(Xtrain, ytrain)
+        self.clf.fit(Xtrain, ytrain)
 
     def predict(self, Xtest):
         print("Predicting with DecisionClassifier")
