@@ -27,6 +27,7 @@ class ContextInformation:
         self.step_size = context_kwargs['step_size']
         self.previous_current_doc_features = None
         self.previous_cpi_features = None
+        self.read_windows = 0
 
     def get_training_information(self, Xtrain, ytrain, dictionary):
         print("Obtaining information from the preprocessed training data")
@@ -37,7 +38,7 @@ class ContextInformation:
         unique_labels = np.unique(ytrain)
         for ul in unique_labels:
             counter = Counter(Xtrain[ytrain == ul].ravel())
-            # We are not interested in the number of UNKOWN and end of document tokens.
+            # We are not interested in the number of UNKOWN, end of document and fill tokens.
             del counter[0]
             del counter[-1]
             del counter[-2]
@@ -75,22 +76,21 @@ class ContextInformation:
         return percentage_feature
 
     def get_historic_features(self, current_doc_features, cpi_features):
-        # TODO
-        self.previous_current_doc_features = current_doc_features
-        self.previous_cpi_features = cpi_features
-        return 8 * np.ones((current_doc_features.shape[0], 4))
+        # TODO Implement another aggregation function.
+        print(current_doc_features.shape, cpi_features.shape)
+        if self.read_windows == 0:
+            self.previous_current_doc_features = current_doc_features
+            self.previous_cpi_features = cpi_features
+        else:
+            self.previous_current_doc_features += current_doc_features
+            self.previous_cpi_features += cpi_features
+        self.read_windows += 1
+
+        avg_current_doc_features = self.previous_current_doc_features / self.read_windows
+        avg_cpi_features = self.previous_cpi_features / self.read_windows
+        return np.hstack((avg_current_doc_features, avg_cpi_features))
 
     def generate_dmc_dataset(self, cpi_Xtest, cpi_ytest, cpi_predictions, dmc_kwargs):
-        '''
-        Dmc features documento parcial:
-            > numero de terminos
-            > numero de terminos distintos
-            > numero de stop words
-            > numero de terminos en el top k de cada clase
-            > porcentaje del documento
-            > salida del modelo cpi ***ANALIZAR SI ES CORRECTO!
-            > HISTORIC DATA ***TODO
-        '''
         print("Generating DecisionClassifier dataset")
         num_docs = len(cpi_Xtest)
         _, docs_len = np.where(cpi_Xtest == -1)
@@ -115,6 +115,9 @@ class ContextInformation:
             dmc_X.append(partial_dmc_data)
             dmc_y.append(partial_dmc_label)
             i += 1
+        self.previous_current_doc_features = None
+        self.previous_cpi_features = None
+        self.read_windows = 0
         dmc_X = np.array(dmc_X)
         dmc_y = np.array(dmc_y)
         pp.pprint(dmc_X)

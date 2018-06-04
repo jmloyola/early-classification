@@ -68,6 +68,7 @@ def predict(Xtest, ytest, ci, cpi, dmc):
     dmc_X, dmc_y = ci.generate_dmc_dataset(Xtest, ytest, cpi_predictions, dmc_kwargs)
     dmc_prediction, prediction_time = dmc.predict(dmc_X)
     return cpi_percentages, cpi_predictions, dmc_prediction, prediction_time
+    #return None, None, None, None
 
 
 def score(ytest, cpi_prediction, dmc_prediction, prediction_time, performance_kwargs):
