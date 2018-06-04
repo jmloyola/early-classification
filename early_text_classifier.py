@@ -58,6 +58,7 @@ def fit(Xtrain, ytrain, cpi_kwargs, context_kwargs, dmc_kwargs, dictionary):
 
     dmc = DecisionClassifier(dmc_kwargs)
     dmc_Xtrain, dmc_ytrain, dmc_Xtest, dmc_ytest = dmc.split_dataset(dmc_X, dmc_y)
+
     dmc.fit(dmc_Xtrain, dmc_ytrain)
     dmc_prediction, _ = dmc.predict(dmc_Xtest)
     return ci, cpi, dmc
@@ -68,7 +69,6 @@ def predict(Xtest, ytest, ci, cpi, dmc):
     dmc_X, dmc_y = ci.generate_dmc_dataset(Xtest, ytest, cpi_predictions, dmc_kwargs)
     dmc_prediction, prediction_time = dmc.predict(dmc_X)
     return cpi_percentages, cpi_predictions, dmc_prediction, prediction_time
-    #return None, None, None, None
 
 
 def score(ytest, cpi_prediction, dmc_prediction, prediction_time, performance_kwargs):
@@ -109,8 +109,12 @@ if __name__ == '__main__':
                       'initial_step': 50,
                       'step_size': 49}
 
-    dmc_kwargs = {'name': 'dmc_kwargs',
-                  'test': 3.0}
+    dmc_kwargs = {'train_dataset_percentage': 0.75,
+                  'test_dataset_percentage': 0.25,
+                  'model_type': 'LinearSVC',
+                  'cpi_model_params': cpi_model_params,
+                  'initial_step': 50,
+                  'step_size': 49}
 
     performance_kwargs = {'name': 'performance_kwargs',
                           'test': 3.0}

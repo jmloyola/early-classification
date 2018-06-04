@@ -1,6 +1,5 @@
 import numpy as np
 from collections import Counter
-import pprint as pp
 
 
 class ContextInformation:
@@ -120,6 +119,4 @@ class ContextInformation:
         self.read_windows = 0
         dmc_X = np.array(dmc_X)
         dmc_y = np.array(dmc_y)
-        pp.pprint(dmc_X)
-        pp.pprint(dmc_y)
         return dmc_X, dmc_y

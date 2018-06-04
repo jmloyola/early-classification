@@ -1,11 +1,58 @@
+import numpy as np
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.naive_bayes import BernoulliNB
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegression
+from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import RidgeClassifier
+
+
 class DecisionClassifier:
     def __init__(self, dmc_kwargs):
         print("Creando clase DecisionClassifier con los siguientes parámetros:")
         print(dmc_kwargs)
+        self.random_state = np.random.RandomState(1234)
+        self.train_dataset_percentage = dmc_kwargs['train_dataset_percentage']
+        self.test_dataset_percentage = dmc_kwargs['test_dataset_percentage']
+        self.model_type = dmc_kwargs['model_type']
+        self.model_params = dmc_kwargs['cpi_model_params']
+        self.initial_step = dmc_kwargs['initial_step']
+        self.step_size = dmc_kwargs['step_size']
+        if self.model_type == 'DecisionTreeClassifier':
+            self.clf = DecisionTreeClassifier(**self.model_params)  # **: Unpack dictionary operator.
+        elif self.model_type == 'MultinomialNB':
+            self.clf = MultinomialNB(**self.model_params)
+        elif self.model_type == 'BernoulliNB':
+            self.clf = BernoulliNB()  # This model doesn't have any parameters.
+        elif self.model_type == 'GaussianNB':
+            self.clf = GaussianNB()  # This model doesn't have any parameters.
+        elif self.model_type == 'KNeighborsClassifier':
+            self.clf = KNeighborsClassifier(**self.model_params)
+        elif self.model_type == 'LinearSVC':
+            self.clf = LinearSVC(**self.model_params)
+        elif self.model_type == 'LogisticRegression':
+            self.clf = LogisticRegression(**self.model_params)
+        elif self.model_type == 'MLPClassifier':
+            self.clf = MLPClassifier(**self.model_params)
+        elif self.model_type == 'RandomForestClassifier':
+            self.clf = RandomForestClassifier(**self.model_params)
+        elif self.model_type == 'RidgeClassifier':
+            self.clf = RidgeClassifier(**self.model_params)
+        else:
+            self.clf = None
 
     def split_dataset(self, X, y):
         print("Splitting preprocessed dataset for the DecisionClassifier")
-        return None, None, None, None
+        num_steps, num_docs, num_features = X.shape
+        num_training = int(np.round(num_docs * self.train_dataset_percentage))
+        num_test = int(np.round(num_docs * self.test_dataset_percentage))
+        if num_docs < num_training + num_test:
+            print("The training-test splits must sum to one or less.")
+        return X[:, 0:num_training, :], y[:, 0:num_training], X[:, num_training:, :], y[:, num_training:]
 
     def fit(self, Xtrain, ytrain):
         print("Training PartialInformationClassifier")
