@@ -1,11 +1,5 @@
-import early_classification_utils as ut
-import pprint as pp
-import glob
 import numpy as np
 from scipy import sparse
-import matplotlib.pyplot as plt
-import pickle
-import os
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.naive_bayes import BernoulliNB

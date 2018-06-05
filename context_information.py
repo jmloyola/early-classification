@@ -77,7 +77,6 @@ class ContextInformation:
 
     def get_historic_features(self, current_doc_features, cpi_features):
         # TODO Implement another aggregation function.
-        print(current_doc_features.shape, cpi_features.shape)
         if self.read_windows == 0:
             self.previous_current_doc_features = current_doc_features
             self.previous_cpi_features = cpi_features
