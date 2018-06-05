@@ -3,120 +3,87 @@ import glob
 from context_information import ContextInformation
 from partial_information_classifier import PartialInformationClassifier
 from decision_classifier import DecisionClassifier
-import pprint as pp
 
 
-def print_params_information(dataset_name, preprocess_kwargs, cpi_kwargs, context_kwargs, dmc_kwargs,
-                             performance_kwargs):
-    print("Early Text Classification")
-    print("Dataset name: {}".format(dataset_name))
-    print('-'*80)
-    print('Pre-process params:')
-    print(preprocess_kwargs)
-    print('-' * 80)
-    print('CPI params:')
-    print(cpi_kwargs)
-    print('-' * 80)
-    print('Context Information params:')
-    print(context_kwargs)
-    print('-' * 80)
-    print('DMC params:')
-    print(dmc_kwargs)
-    print('-' * 80)
-    print('Performance params:')
-    print(performance_kwargs)
-    print('-' * 80)
-    print('-' * 80)
+class EarlyTextClassifier:
+    def __init__(self, etc_kwargs, preprocess_kwargs, cpi_kwargs, context_kwargs, dmc_kwargs, performance_kwargs):
+        print("Creando clase EarlyTextClassifier con los siguientes parámetros:")
+        print(etc_kwargs, preprocess_kwargs, cpi_kwargs, context_kwargs, dmc_kwargs, performance_kwargs)
+        self.dataset_name = etc_kwargs['dataset_name']
+        self.initial_step = etc_kwargs['initial_step']
+        self.step_size = etc_kwargs['step_size']
+        self.preprocess_kwargs = preprocess_kwargs
+        self.cpi_kwargs = cpi_kwargs
+        self.context_kwargs = context_kwargs
+        self.dmc_kwargs = dmc_kwargs
+        self.performance_kwargs = performance_kwargs
+        self.cpi_kwargs['initial_step'] = self.initial_step
+        self.cpi_kwargs['step_size'] = self.step_size
+        self.context_kwargs['initial_step'] = self.initial_step
+        self.context_kwargs['step_size'] = self.step_size
+        self.dictionary = None
+        self.ci = None
+        self.cpi = None
+        self.dmc = None
 
+    def print_params_information(self):
+        print("Early Text Classification")
+        print("Dataset name: {}".format(self.dataset_name))
+        print('-'*80)
+        print('Pre-process params:')
+        print(self.preprocess_kwargs)
+        print('-' * 80)
+        print('CPI params:')
+        print(self.cpi_kwargs)
+        print('-' * 80)
+        print('Context Information params:')
+        print(self.context_kwargs)
+        print('-' * 80)
+        print('DMC params:')
+        print(self.dmc_kwargs)
+        print('-' * 80)
+        print('Performance params:')
+        print(self.performance_kwargs)
+        print('-' * 80)
+        print('-' * 80)
 
-def preprocess_dataset(dataset_name):
-    # Search dataset for the dataset, both training and test sets.
-    train_path = glob.glob('dataset/**/{}_train.txt'.format(dataset_name), recursive=True)[0]
-    test_path = glob.glob('dataset/**/{}_test.txt'.format(dataset_name), recursive=True)[0]
+    def preprocess_dataset(self):
+        # Search dataset for the dataset, both training and test sets.
+        train_path = glob.glob('dataset/**/{}_train.txt'.format(self.dataset_name), recursive=True)[0]
+        test_path = glob.glob('dataset/**/{}_test.txt'.format(self.dataset_name), recursive=True)[0]
 
-    dictionary = ut.build_dict(path=train_path, min_word_length=2)
+        self.dictionary = ut.build_dict(path=train_path, min_word_length=2)
 
-    Xtrain = ut.transform_into_numeric_array(path=train_path, dictionary=dictionary)
-    ytrain, unique_labels = ut.get_labels(path=train_path)
+        Xtrain = ut.transform_into_numeric_array(path=train_path, dictionary=self.dictionary)
+        ytrain, unique_labels = ut.get_labels(path=train_path)
 
-    Xtest = ut.transform_into_numeric_array(path=test_path, dictionary=dictionary)
-    ytest, _ = ut.get_labels(path=test_path, unique_labels=unique_labels)
+        Xtest = ut.transform_into_numeric_array(path=test_path, dictionary=self.dictionary)
+        ytest, _ = ut.get_labels(path=test_path, unique_labels=unique_labels)
 
-    return Xtrain, ytrain, Xtest, ytest, dictionary
+        return Xtrain, ytrain, Xtest, ytest
 
+    def fit(self, Xtrain, ytrain):
+        self.ci = ContextInformation(self.context_kwargs, self.dictionary)
+        self.ci.get_training_information(Xtrain, ytrain)
 
-def fit(Xtrain, ytrain, cpi_kwargs, context_kwargs, dmc_kwargs, dictionary):
-    ci = ContextInformation(context_kwargs)
-    ci.get_training_information(Xtrain, ytrain, dictionary)
+        self.cpi = PartialInformationClassifier(self.cpi_kwargs, self.dictionary)
+        cpi_Xtrain, cpi_ytrain, cpi_Xtest, cpi_ytest = self.cpi.split_dataset(Xtrain, ytrain)
+        self.cpi.fit(cpi_Xtrain, cpi_ytrain)
+        cpi_predictions, cpi_percentages = self.cpi.predict(cpi_Xtest)
 
-    cpi = PartialInformationClassifier(cpi_kwargs, dictionary)
-    cpi_Xtrain, cpi_ytrain, cpi_Xtest, cpi_ytest = cpi.split_dataset(Xtrain, ytrain)
-    cpi.fit(cpi_Xtrain, cpi_ytrain)
-    cpi_predictions, cpi_percentages = cpi.predict(cpi_Xtest)
+        dmc_X, dmc_y = self.ci.generate_dmc_dataset(cpi_Xtest, cpi_ytest, cpi_predictions)
 
-    dmc_X, dmc_y = ci.generate_dmc_dataset(cpi_Xtest, cpi_ytest, cpi_predictions, dmc_kwargs)
+        self.dmc = DecisionClassifier(self.dmc_kwargs)
+        dmc_Xtrain, dmc_ytrain, dmc_Xtest, dmc_ytest = self.dmc.split_dataset(dmc_X, dmc_y)
 
-    dmc = DecisionClassifier(dmc_kwargs)
-    dmc_Xtrain, dmc_ytrain, dmc_Xtest, dmc_ytest = dmc.split_dataset(dmc_X, dmc_y)
+        self.dmc.fit(dmc_Xtrain, dmc_ytrain)
+        dmc_prediction, _ = self.dmc.predict(dmc_Xtest)
 
-    dmc.fit(dmc_Xtrain, dmc_ytrain)
-    dmc_prediction, _ = dmc.predict(dmc_Xtest)
-    return ci, cpi, dmc
+    def predict(self, Xtest, ytest):
+        cpi_predictions, cpi_percentages = self.cpi.predict(Xtest)
+        dmc_X, dmc_y = self.ci.generate_dmc_dataset(Xtest, ytest, cpi_predictions)
+        dmc_prediction, prediction_time = self.dmc.predict(dmc_X)
+        return cpi_percentages, cpi_predictions, dmc_prediction, prediction_time
 
-
-def predict(Xtest, ytest, ci, cpi, dmc):
-    cpi_predictions, cpi_percentages = cpi.predict(Xtest)
-    dmc_X, dmc_y = ci.generate_dmc_dataset(Xtest, ytest, cpi_predictions, dmc_kwargs)
-    dmc_prediction, prediction_time = dmc.predict(dmc_X)
-    return cpi_percentages, cpi_predictions, dmc_prediction, prediction_time
-
-
-def score(ytest, cpi_prediction, dmc_prediction, prediction_time, performance_kwargs):
-    return
-
-
-def main(dataset_name, preprocess_kwargs, cpi_kwargs, context_kwargs, dmc_kwargs, performance_kwargs):
-    print_params_information(dataset_name, preprocess_kwargs, cpi_kwargs, context_kwargs, dmc_kwargs,
-                             performance_kwargs)
-    Xtrain, ytrain, Xtest, ytest, dictionary = preprocess_dataset(dataset_name)
-
-    ci, cpi, dmc = fit(Xtrain, ytrain, cpi_kwargs, context_kwargs, dmc_kwargs, dictionary)
-    cpi_percentages, cpi_predictions, dmc_prediction, prediction_time = predict(Xtest, ytest, ci, cpi, dmc)
-
-    score(ytest, cpi_predictions, dmc_prediction, prediction_time, performance_kwargs)
-
-
-if __name__ == '__main__':
-    dataset_name = 'prueba'
-    #dataset_name = 'r8-all-terms-clean'
-    preprocess_kwargs = {'name': 'preprocess_kwargs',
-                         'test': 3.0}
-
-    cpi_model_params = dict()
-    cpi_model_params['C'] = 2
-    cpi_model_params['multi_class'] = 'ovr'
-    cpi_model_params['random_state'] = 0
-    cpi_kwargs = {'window_size': 5,
-                  'train_dataset_percentage': 0.75,
-                  'test_dataset_percentage': 0.25,
-                  'doc_rep': 'word_tf',
-                  'model_type': 'LinearSVC',
-                  'cpi_model_params': cpi_model_params,
-                  'initial_step': 50,
-                  'step_size': 49}
-
-    context_kwargs = {'number_most_common': 3,
-                      'initial_step': 50,
-                      'step_size': 49}
-
-    dmc_kwargs = {'train_dataset_percentage': 0.75,
-                  'test_dataset_percentage': 0.25,
-                  'model_type': 'LinearSVC',
-                  'cpi_model_params': cpi_model_params,
-                  'initial_step': 50,
-                  'step_size': 49}
-
-    performance_kwargs = {'name': 'performance_kwargs',
-                          'test': 3.0}
-
-    main(dataset_name, preprocess_kwargs, cpi_kwargs, context_kwargs, dmc_kwargs, performance_kwargs)
+    def score(self, ytest, cpi_prediction, dmc_prediction, prediction_time):
+        return

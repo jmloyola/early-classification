@@ -16,7 +16,7 @@ class ContextInformation:
                           'only', 'own', 'same', 'so', 'than', 'too', 'very', 'can', 'will', 'just', 'don', 'should',
                           'now']
 
-    def __init__(self, context_kwargs):
+    def __init__(self, context_kwargs, dictionary):
         print("Creando clase ContextInformation con los siguientes parámetros:")
         print(context_kwargs)
         self.number_most_common = context_kwargs['number_most_common']
@@ -27,10 +27,11 @@ class ContextInformation:
         self.previous_current_doc_features = None
         self.previous_cpi_features = None
         self.read_windows = 0
+        self.dictionary = dictionary
 
-    def get_training_information(self, Xtrain, ytrain, dictionary):
+    def get_training_information(self, Xtrain, ytrain):
         print("Obtaining information from the preprocessed training data")
-        for key, value in dictionary.items():
+        for key, value in self.dictionary.items():
             if key in self.english_stop_words:
                 self.tokens_stop_words.append(value)
 
@@ -89,7 +90,7 @@ class ContextInformation:
         avg_cpi_features = self.previous_cpi_features / self.read_windows
         return np.hstack((avg_current_doc_features, avg_cpi_features))
 
-    def generate_dmc_dataset(self, cpi_Xtest, cpi_ytest, cpi_predictions, dmc_kwargs):
+    def generate_dmc_dataset(self, cpi_Xtest, cpi_ytest, cpi_predictions):
         print("Generating DecisionClassifier dataset")
         num_docs = len(cpi_Xtest)
         _, docs_len = np.where(cpi_Xtest == -1)

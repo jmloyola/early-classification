@@ -19,9 +19,7 @@ class DecisionClassifier:
         self.train_dataset_percentage = dmc_kwargs['train_dataset_percentage']
         self.test_dataset_percentage = dmc_kwargs['test_dataset_percentage']
         self.model_type = dmc_kwargs['model_type']
-        self.model_params = dmc_kwargs['cpi_model_params']
-        self.initial_step = dmc_kwargs['initial_step']
-        self.step_size = dmc_kwargs['step_size']
+        self.model_params = dmc_kwargs['dmc_model_params']
         if self.model_type == 'DecisionTreeClassifier':
             self.clf = DecisionTreeClassifier(**self.model_params)  # **: Unpack dictionary operator.
         elif self.model_type == 'MultinomialNB':
