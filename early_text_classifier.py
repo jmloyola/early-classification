@@ -52,7 +52,7 @@ def fit(Xtrain, ytrain, cpi_kwargs, context_kwargs, dmc_kwargs, dictionary):
     cpi = PartialInformationClassifier(cpi_kwargs, dictionary)
     cpi_Xtrain, cpi_ytrain, cpi_Xtest, cpi_ytest = cpi.split_dataset(Xtrain, ytrain)
     cpi.fit(cpi_Xtrain, cpi_ytrain)
-    cpi_percentages, cpi_predictions = cpi.predict(cpi_Xtest)
+    cpi_predictions, cpi_percentages = cpi.predict(cpi_Xtest)
 
     dmc_X, dmc_y = ci.generate_dmc_dataset(cpi_Xtest, cpi_ytest, cpi_predictions, dmc_kwargs)
 
@@ -65,7 +65,7 @@ def fit(Xtrain, ytrain, cpi_kwargs, context_kwargs, dmc_kwargs, dictionary):
 
 
 def predict(Xtest, ytest, ci, cpi, dmc):
-    cpi_percentages, cpi_predictions = cpi.predict(Xtest)
+    cpi_predictions, cpi_percentages = cpi.predict(Xtest)
     dmc_X, dmc_y = ci.generate_dmc_dataset(Xtest, ytest, cpi_predictions, dmc_kwargs)
     dmc_prediction, prediction_time = dmc.predict(dmc_X)
     return cpi_percentages, cpi_predictions, dmc_prediction, prediction_time

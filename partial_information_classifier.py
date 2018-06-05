@@ -116,7 +116,7 @@ class PartialInformationClassifier:
             preds.append(predictions_test)
         percentages = np.array(percentages)
         preds = np.array(preds)
-        return percentages, preds
+        return preds, percentages
 
 
 def preprocessed_dataset_exists(dataset, doc_representation):

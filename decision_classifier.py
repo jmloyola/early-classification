@@ -67,4 +67,15 @@ class DecisionClassifier:
 
     def predict(self, Xtest):
         print("Predicting with DecisionClassifier")
-        return None, None
+        num_steps, num_docs, num_features = Xtest.shape
+        predictions_list = []
+        time_to_stop_reading = -1 * np.ones(num_docs, dtype=int)
+        for idx, step_data in enumerate(Xtest):
+            predictions_step_data = self.clf.predict(step_data)
+            predictions_list.append(predictions_step_data)
+            for j in range(num_docs):
+                if (time_to_stop_reading[j] == -1) and (predictions_step_data[j] == 1):
+                    time_to_stop_reading[j] = idx
+
+        predictions = np.array(predictions_list)
+        return predictions, time_to_stop_reading
