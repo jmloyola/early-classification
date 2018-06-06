@@ -13,8 +13,6 @@ from sklearn.linear_model import RidgeClassifier
 
 class DecisionClassifier:
     def __init__(self, dmc_kwargs):
-        print("Creando clase DecisionClassifier con los siguientes parámetros:")
-        print(dmc_kwargs)
         self.random_state = np.random.RandomState(1234)
         self.train_dataset_percentage = dmc_kwargs['train_dataset_percentage']
         self.test_dataset_percentage = dmc_kwargs['test_dataset_percentage']

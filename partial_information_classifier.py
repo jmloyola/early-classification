@@ -15,10 +15,7 @@ from sklearn.model_selection import ShuffleSplit
 
 class PartialInformationClassifier:
     def __init__(self, cpi_kwargs, dictionary):
-        print("Creando clase PartialInformationClassifier con los siguientes parámetros:")
-        print(cpi_kwargs)
         self.random_state = np.random.RandomState(1234)
-        self.window_size = cpi_kwargs['window_size']
         self.train_dataset_percentage = cpi_kwargs['train_dataset_percentage']
         self.test_dataset_percentage = cpi_kwargs['test_dataset_percentage']
         self.doc_rep = cpi_kwargs['doc_rep']
@@ -66,23 +63,24 @@ class PartialInformationClassifier:
         i = []
         j = []
         v = []
-        for idx, row in enumerate(data):
-            unique, counts = np.unique(row, return_counts=True)
+        if self.doc_rep == 'term_frec':
+            for idx, row in enumerate(data):
+                unique, counts = np.unique(row, return_counts=True)
 
-            index_to_delete = np.where((unique == -1) | (unique == -2))
-            unique = np.delete(unique, index_to_delete)
-            counts = np.delete(counts, index_to_delete)
+                index_to_delete = np.where((unique == -1) | (unique == -2))
+                unique = np.delete(unique, index_to_delete)
+                counts = np.delete(counts, index_to_delete)
 
-            i.extend([idx] * len(unique))
-            j.extend(unique.tolist())
-            v.extend(counts.tolist())
+                i.extend([idx] * len(unique))
+                j.extend(unique.tolist())
+                v.extend(counts.tolist())
         sparse_matrix = sparse.coo_matrix((v, (i, j)), shape=(num_docs, num_features)).tocsr()
-
         return sparse_matrix
 
     def fit(self, Xtrain, ytrain):
         print("Training PartialInformationClassifier")
         Xtrain = self.get_document_representation(Xtrain)
+        print(f'cpi_Xtrain_representation.shape: {Xtrain.shape}')
         self.clf.fit(Xtrain, ytrain)
 
     def predict(self, Xtest):
@@ -104,6 +102,7 @@ class PartialInformationClassifier:
                 partial_Xtest[idx, 0:pl] = Xtest[idx, 0:pl]
                 partial_Xtest[idx, pl] = -1
             partial_Xtest = self.get_document_representation(partial_Xtest)
+            print(f'cpi_partial[{p}]_Xtest_representation.shape: {partial_Xtest.shape}')
             predictions_test = self.clf.predict(partial_Xtest)
 
             percentages.append(p)

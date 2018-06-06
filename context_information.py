@@ -17,8 +17,6 @@ class ContextInformation:
                           'now']
 
     def __init__(self, context_kwargs, dictionary):
-        print("Creando clase ContextInformation con los siguientes parámetros:")
-        print(context_kwargs)
         self.number_most_common = context_kwargs['number_most_common']
         self.most_common_tokens = {}
         self.tokens_stop_words = []

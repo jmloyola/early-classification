@@ -1,4 +1,3 @@
-import early_classification_utils as ut
 import glob
 from context_information import ContextInformation
 from partial_information_classifier import PartialInformationClassifier
@@ -9,11 +8,12 @@ import pprint as pp
 import pickle
 import os
 
+GLOBAL_BASE_DIR = os.getcwd()
+
 
 class EarlyTextClassifier:
-    def __init__(self, etc_kwargs, preprocess_kwargs, cpi_kwargs, context_kwargs, dmc_kwargs, performance_kwargs):
-        print("Creando clase EarlyTextClassifier con los siguientes parámetros:")
-        print(etc_kwargs, preprocess_kwargs, cpi_kwargs, context_kwargs, dmc_kwargs, performance_kwargs)
+    def __init__(self, etc_kwargs, preprocess_kwargs, cpi_kwargs, context_kwargs, dmc_kwargs):
+        print("Early Text Classification")
         self.dataset_name = etc_kwargs['dataset_name']
         self.initial_step = etc_kwargs['initial_step']
         self.step_size = etc_kwargs['step_size']
@@ -21,7 +21,6 @@ class EarlyTextClassifier:
         self.cpi_kwargs = cpi_kwargs
         self.context_kwargs = context_kwargs
         self.dmc_kwargs = dmc_kwargs
-        self.performance_kwargs = performance_kwargs
         self.cpi_kwargs['initial_step'] = self.initial_step
         self.cpi_kwargs['step_size'] = self.step_size
         self.context_kwargs['initial_step'] = self.initial_step
@@ -63,48 +62,57 @@ class EarlyTextClassifier:
                     self.is_loaded = True
 
     def print_params_information(self):
-        print("Early Text Classification")
         print("Dataset name: {}".format(self.dataset_name))
         print('-'*80)
         print('Pre-process params:')
-        print(self.preprocess_kwargs)
+        pp.pprint(self.preprocess_kwargs)
         print('-' * 80)
         print('CPI params:')
-        print(self.cpi_kwargs)
+        pp.pprint(self.cpi_kwargs)
         print('-' * 80)
         print('Context Information params:')
-        print(self.context_kwargs)
+        pp.pprint(self.context_kwargs)
         print('-' * 80)
         print('DMC params:')
-        print(self.dmc_kwargs)
-        print('-' * 80)
-        print('Performance params:')
-        print(self.performance_kwargs)
+        pp.pprint(self.dmc_kwargs)
         print('-' * 80)
         print('-' * 80)
 
     def preprocess_dataset(self):
+        print('Pre-processing dataset')
         # Search dataset for the dataset, both training and test sets.
         train_path = glob.glob('dataset/**/{}_train.txt'.format(self.dataset_name), recursive=True)[0]
         test_path = glob.glob('dataset/**/{}_test.txt'.format(self.dataset_name), recursive=True)[0]
 
-        self.dictionary = ut.build_dict(path=train_path, min_word_length=2)
+        self.dictionary = build_dict(path=train_path, **self.preprocess_kwargs)
 
-        Xtrain = ut.transform_into_numeric_array(path=train_path, dictionary=self.dictionary)
-        ytrain, self.unique_labels = ut.get_labels(path=train_path)
+        Xtrain = transform_into_numeric_array(path=train_path, dictionary=self.dictionary)
+        ytrain, self.unique_labels = get_labels(path=train_path)
 
-        Xtest = ut.transform_into_numeric_array(path=test_path, dictionary=self.dictionary)
-        ytest, _ = ut.get_labels(path=test_path, unique_labels=self.unique_labels)
+        Xtest = transform_into_numeric_array(path=test_path, dictionary=self.dictionary)
+        ytest, _ = get_labels(path=test_path, unique_labels=self.unique_labels)
+
+        print(f'Xtrain.shape: {Xtrain.shape}')
+        print(f'ytrain.shape: {ytrain.shape}')
+        print(f'Xtest.shape: {Xtest.shape}')
+        print(f'ytest.shape: {ytest.shape}')
 
         return Xtrain, ytrain, Xtest, ytest
 
     def fit(self, Xtrain, ytrain):
         if not self.is_loaded:
+            print('Training EarlyTextClassifier model')
             self.ci = ContextInformation(self.context_kwargs, self.dictionary)
             self.ci.get_training_information(Xtrain, ytrain)
 
             self.cpi = PartialInformationClassifier(self.cpi_kwargs, self.dictionary)
             cpi_Xtrain, cpi_ytrain, cpi_Xtest, cpi_ytest = self.cpi.split_dataset(Xtrain, ytrain)
+
+            print(f'cpi_Xtrain.shape: {cpi_Xtrain.shape}')
+            print(f'cpi_ytrain.shape: {cpi_ytrain.shape}')
+            print(f'cpi_Xtest.shape: {cpi_Xtest.shape}')
+            print(f'cpi_ytest.shape: {cpi_ytest.shape}')
+
             self.cpi.fit(cpi_Xtrain, cpi_ytrain)
             cpi_predictions, cpi_percentages = self.cpi.predict(cpi_Xtest)
 
@@ -113,10 +121,18 @@ class EarlyTextClassifier:
             self.dmc = DecisionClassifier(self.dmc_kwargs)
             dmc_Xtrain, dmc_ytrain, dmc_Xtest, dmc_ytest = self.dmc.split_dataset(dmc_X, dmc_y)
 
+            print(f'dmc_Xtrain.shape: {dmc_Xtrain.shape}')
+            print(f'dmc_ytrain.shape: {dmc_ytrain.shape}')
+            print(f'dmc_Xtest.shape: {dmc_Xtest.shape}')
+            print(f'dmc_ytest.shape: {dmc_ytest.shape}')
+
             self.dmc.fit(dmc_Xtrain, dmc_ytrain)
             dmc_prediction, _ = self.dmc.predict(dmc_Xtest)
+        else:
+            print('EarlyTextClassifier model already trained')
 
     def predict(self, Xtest, ytest):
+        print('Predicting with the EarlyTextClassifier model')
         cpi_predictions, cpi_percentages = self.cpi.predict(Xtest)
 
         accuracy_cpi = np.sum(cpi_predictions == ytest, axis=1) / ytest.size
@@ -138,12 +154,12 @@ class EarlyTextClassifier:
 
         return cpi_percentages, cpi_predictions, dmc_prediction, prediction_time
 
-    def get_time_penalization(self, k):
-        if self.performance_kwargs['penalization_type'] == 'Losada-Crestani':
-            return 1.0 - ((1.0 + np.exp(k - self.performance_kwargs['time_threshold']))**(-1))
+    def time_penalization(self, k, penalization_type, time_threshold):
+        if penalization_type == 'Losada-Crestani':
+            return 1.0 - ((1.0 + np.exp(k - time_threshold))**(-1))
         return 0.0
 
-    def score(self, y_true, cpi_prediction, cpi_percentages, dmc_prediction, prediction_time):
+    def score(self, y_true, cpi_prediction, cpi_percentages, prediction_time, penalization_type, time_threshold, costs):
         y_pred = []
         k = []
         num_docs = len(y_true)
@@ -159,18 +175,21 @@ class EarlyTextClassifier:
         if len(self.unique_labels) > 2:
             for idx in range(num_docs):
                 if y_true[idx] == y_pred[idx]:
-                    error_score[idx] = self.get_time_penalization(k[idx]) * self.performance_kwargs['c_tp']
+                    error_score[idx] = self.time_penalization(k[idx], penalization_type, time_threshold) * costs['c_tp']
                 else:
-                    error_score[idx] = self.performance_kwargs['c_fn'] + np.sum(y_true == y_true[idx]) / num_docs
+                    error_score[idx] = costs['c_fn'] + np.sum(y_true == y_true[idx]) / num_docs
         else:
             for idx in range(num_docs):
                 if (y_true[idx] == 1) and (y_pred[idx] == 1):
-                    error_score[idx] = self.get_time_penalization(k[idx]) * self.performance_kwargs['c_tp']
+                    error_score[idx] = self.time_penalization(k[idx], penalization_type, time_threshold) * costs['c_tp']
                 elif (y_true[idx] == 1) and (y_pred[idx] == 0):
-                    error_score[idx] = self.performance_kwargs['c_fn']
+                    error_score[idx] = costs['c_fn']
                 elif (y_true[idx] == 0) and (y_pred[idx] == 1):
-                    # error_score[idx] = self.performance_kwargs['c_fp']
-                    error_score[idx] = np.sum(y_true == 1) / num_docs
+                    if costs['c_fp'] == 'proportion_positive_cases':
+                        # TODO: document this case.
+                        error_score[idx] = np.sum(y_true == 1) / num_docs
+                    else:
+                        error_score[idx] = costs['c_fp']
                 elif (y_true[idx] == 0) and (y_pred[idx] == 0):
                     error_score[idx] = 0
         erde_score = error_score.mean()
@@ -178,7 +197,6 @@ class EarlyTextClassifier:
         recall_etc = recall_score(y_true, y_pred, average='micro')
         f1_etc = f1_score(y_true, y_pred, average='micro')
         accuracy_etc = accuracy_score(y_true, y_pred)
-        #confusion_matrix_etc = confusion_matrix(y_true, y_pred, self.unique_labels)
         confusion_matrix_etc = confusion_matrix(y_true, y_pred)
         print('*' * 30)
         print('Score ETC:')
@@ -187,11 +205,10 @@ class EarlyTextClassifier:
         print(f'Recall: {recall_etc:.3}')
         print(f'F1 Measure: {f1_etc:.3}')
         print(f'Accuracy: {accuracy_etc:.3}')
-        print(f'ERDE o={self.performance_kwargs["time_threshold"]}: {erde_score:.3}')
+        print(f'ERDE o={time_threshold}: {erde_score:.3}')
         print('Confusion matrix:')
         pp.pprint(confusion_matrix_etc)
         print('*' * 30)
-        return
 
     def save_model(self):
         if not self.is_loaded:
@@ -205,3 +222,170 @@ class EarlyTextClassifier:
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             with open(file_path, 'wb') as fp:
                 pickle.dump(self, fp)
+
+
+def read_raw_dataset(path):
+    """"
+    Read raw dataset and returns a list of tuples (label, document) for every document in the dataset.
+
+    Inputs:
+    - path: path to the file of the raw dataset
+
+    Output: List of tuples (label, document)
+    """
+    input_file_path = os.path.join(GLOBAL_BASE_DIR, path)
+
+    # Store the dataset as a list of tuples (label, document).
+    dataset = []
+    i = 0
+    with open(input_file_path, 'r') as f:
+        for line in f:
+            try:
+                label, document = line.split(maxsplit=1)
+            except:
+                print(
+                    'Error while reading dataset: {}. The {}º line does not follow the form \"label\tdocument\"'.format(
+                        path, i))
+                continue
+            # Remove new line character from document.
+            document = document[:-1]
+            dataset.append((label, document))
+            i = i + 1
+    return dataset
+
+
+def build_dict(path, min_word_length=0, max_number_words=None, representation='word_tf'):
+    """
+    Returns a dictionary with the words of the train dataset.
+    The dictionary contains the most relevant words with an index indicating its position in the list of number of times
+    each word appears.
+    It should be noted that the value zero of the index is reserved for the words UNKOWN.
+
+    Inputs:
+    - path: path to the file containing the raw dataset.
+    - min_word_length: minimum number of characters that every word in the new dictionary must have.
+    - max_number_words: maximum number of words for the dictionary.
+    - representation: document representation ['word_tf', 'word_tf_idf', 'character_3_gram_tf',
+                                               'character_3_gram_tf_idf', 'word_3_gram_tf', 'word_3_gram_tf_idf'].
+
+    Output: dictionary containing the most relevant words in the corpus ordered by the amount of times they appear.
+    """
+    dataset = read_raw_dataset(path)
+    documents = [x[1] for x in dataset]
+
+    print('Building dictionary')
+    wordcount = dict()
+    for ss in documents:
+        words = ss.strip().lower().split()
+        for w in words:
+            if len(w) < min_word_length:
+                continue
+            if w not in wordcount:
+                wordcount[w] = 1
+            else:
+                wordcount[w] += 1
+
+    # Para Python 3 hace falta transformar en lista. Por ejemplo: list(wordcount.values())
+    counts = list(wordcount.values())
+    keys = list(wordcount.keys())
+
+    print(np.sum(counts), ' total words ', len(keys), ' unique words')
+
+    # Hace un slicing del arreglo de counts ordenados.
+    # En este caso el slicing toma todos los elementos, pero el paso es negativo, indicando que lo procesa en el orden
+    # inverso.
+    # numpy.argsort(counts)[::-1] es lo mismo que numpy.argsort(counts)[0:len(counts):-1]
+    # Assume n is the number of elements in the dimension being sliced. Then, if i is not given it defaults to 0 for
+    # k > 0 and n - 1 for k < 0 . If j is not given it defaults to n for k > 0 and -n-1 for k < 0 . If k is not given
+    # it defaults to 1. Note that :: is the same as : and means select all indices along this axis.
+    # https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html
+    sorted_idx = np.argsort(counts)[::-1]
+
+    worddict = dict()
+
+    for idx, ss in enumerate(sorted_idx):
+        if max_number_words <= idx:
+            print(f'Considering only {max_number_words} unique terms')
+            break
+        worddict[keys[ss]] = idx+1  # leave 0 (UNK)
+    return worddict
+
+
+def transform_into_numeric_array(path, dictionary):
+    """
+    Given the path to a dataset, this function transform a list of documents with a numpy array of shape (num_docs,
+    max_length+1), where the words are replaced for the index given by the
+    dictionary.
+
+    Inputs:
+    - path: path to the file containing the raw dataset.
+    - dictionary: dictionary with the words that matter.
+
+    Output: Numpy array of shape (num_docs, max_length+1) of documents with the words replaced for the index given by
+    the dictionary.
+
+    Note: The index the dictionary gives is the position of the word if we were to arrange them from more to less taking
+    into account the number of occurrences of every words in the training dataset.
+    The number 0 is reserved for the UNKOWN token and the number -1 is reserved to indicate the end of the document.
+
+    """
+    dataset = read_raw_dataset(path)
+    num_docs = len(dataset)
+
+    seqs = [None] * num_docs
+    max_length = 0
+    for idx, line in enumerate(dataset):
+        document = line[1]
+        words = document.strip().lower().split()
+        seqs[idx] = [dictionary[w] if w in dictionary else 0 for w in words]
+        length_doc = len(words)
+        if max_length < length_doc:
+            max_length = length_doc
+
+    preprocess_dataset = -2*np.ones((num_docs, max_length+1), dtype=int)
+    for idx in range(num_docs):
+        length_doc = len(seqs[idx])
+        preprocess_dataset[idx, 0:length_doc] = seqs[idx]
+        preprocess_dataset[idx, length_doc] = -1
+
+    return preprocess_dataset
+
+
+def get_labels(path, unique_labels=None):
+    """"
+    Read raw dataset and returns a tuple (final_labels, unique_labels).
+    final_labels is a numpy.array of integers containing the label of every document.
+    unique_labels is list containing every label (without repetition) ordered. Only used for the test set.
+
+    Inputs:
+    - path: path to the file of the raw dataset
+    - unique_labels: list containing every label (without repetition) ordered.
+
+    Output: tuple (final_labels, unique_labels).
+    - final_labels is a numpy.array of integers containing the label of every document.
+    - unique_labels is list containing every label (without repetition) ordered.
+    """
+    input_file_path = os.path.join(GLOBAL_BASE_DIR, path)
+
+    labels = []
+    ul = [] if unique_labels is None else unique_labels
+    with open(input_file_path, 'r') as f:
+        for idx, line in enumerate(f):
+            try:
+                label, _ = line.split(maxsplit=1)
+            except RuntimeWarning:  # Arbitrary exception type
+                print(
+                    'Error while reading dataset: {}. The {}º line does not follow the form \"label\tdocument\"'.format(
+                        path, idx))
+                continue
+            labels.append(label)
+            if (unique_labels is None) and (label not in ul):
+                ul.append(label)
+
+        ul.sort()  # Sort list of unique_labels.
+    num_documents = len(labels)
+    final_labels = np.empty([num_documents], dtype=int)
+    for idx, l in enumerate(labels):
+        final_labels[idx] = ul.index(l)
+
+    return final_labels, ul
