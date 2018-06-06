@@ -67,12 +67,14 @@ class DecisionClassifier:
         print("Predicting with DecisionClassifier")
         num_steps, num_docs, num_features = Xtest.shape
         predictions_list = []
-        time_to_stop_reading = -1 * np.ones(num_docs, dtype=int)
+        # We initialise the time_to_stop_reading array with the value (num_steps - 1) because if dmc never decides to
+        # stop, the time to stop will be when the document is finish.
+        time_to_stop_reading = (num_steps - 1) * np.ones(num_docs, dtype=int)
         for idx, step_data in enumerate(Xtest):
             predictions_step_data = self.clf.predict(step_data)
             predictions_list.append(predictions_step_data)
             for j in range(num_docs):
-                if (time_to_stop_reading[j] == -1) and (predictions_step_data[j] == 1):
+                if (time_to_stop_reading[j] == (num_steps - 1)) and (predictions_step_data[j] == 1):
                     time_to_stop_reading[j] = idx
 
         predictions = np.array(predictions_list)
