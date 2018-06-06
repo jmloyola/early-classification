@@ -6,6 +6,8 @@ from decision_classifier import DecisionClassifier
 import numpy as np
 from sklearn.metrics import recall_score, accuracy_score, f1_score, precision_score, confusion_matrix
 import pprint as pp
+import pickle
+import os
 
 
 class EarlyTextClassifier:
@@ -29,6 +31,36 @@ class EarlyTextClassifier:
         self.cpi = None
         self.dmc = None
         self.unique_labels = None
+        self.is_loaded = False
+
+        self.load_model()
+
+    def has_same_parameters(self, model):
+        if (self.dataset_name == model.dataset_name) and \
+                (self.initial_step == model.initial_step) and \
+                (self.step_size == model.step_size) and \
+                (self.preprocess_kwargs == model.preprocess_kwargs) and \
+                (self.cpi_kwargs == model.cpi_kwargs) and \
+                (self.context_kwargs == model.context_kwargs) and \
+                (self.dmc_kwargs == model.dmc_kwargs):
+            return True
+        else:
+            return False
+
+    def copy_attributes(self, model):
+        self.ci = model.ci
+        self.cpi = model.cpi
+        self.dmc = model.dmc
+
+    def load_model(self):
+        possible_files = glob.glob(f'models/{self.dataset_name}/*.pickle')
+        for file in possible_files:
+            with open(file, 'rb') as f:
+                loaded_model = pickle.load(f)
+                if self.has_same_parameters(loaded_model):
+                    print('Model already trained. Loading it.')
+                    self.copy_attributes(loaded_model)
+                    self.is_loaded = True
 
     def print_params_information(self):
         print("Early Text Classification")
@@ -67,21 +99,22 @@ class EarlyTextClassifier:
         return Xtrain, ytrain, Xtest, ytest
 
     def fit(self, Xtrain, ytrain):
-        self.ci = ContextInformation(self.context_kwargs, self.dictionary)
-        self.ci.get_training_information(Xtrain, ytrain)
+        if not self.is_loaded:
+            self.ci = ContextInformation(self.context_kwargs, self.dictionary)
+            self.ci.get_training_information(Xtrain, ytrain)
 
-        self.cpi = PartialInformationClassifier(self.cpi_kwargs, self.dictionary)
-        cpi_Xtrain, cpi_ytrain, cpi_Xtest, cpi_ytest = self.cpi.split_dataset(Xtrain, ytrain)
-        self.cpi.fit(cpi_Xtrain, cpi_ytrain)
-        cpi_predictions, cpi_percentages = self.cpi.predict(cpi_Xtest)
+            self.cpi = PartialInformationClassifier(self.cpi_kwargs, self.dictionary)
+            cpi_Xtrain, cpi_ytrain, cpi_Xtest, cpi_ytest = self.cpi.split_dataset(Xtrain, ytrain)
+            self.cpi.fit(cpi_Xtrain, cpi_ytrain)
+            cpi_predictions, cpi_percentages = self.cpi.predict(cpi_Xtest)
 
-        dmc_X, dmc_y = self.ci.generate_dmc_dataset(cpi_Xtest, cpi_ytest, cpi_predictions)
+            dmc_X, dmc_y = self.ci.generate_dmc_dataset(cpi_Xtest, cpi_ytest, cpi_predictions)
 
-        self.dmc = DecisionClassifier(self.dmc_kwargs)
-        dmc_Xtrain, dmc_ytrain, dmc_Xtest, dmc_ytest = self.dmc.split_dataset(dmc_X, dmc_y)
+            self.dmc = DecisionClassifier(self.dmc_kwargs)
+            dmc_Xtrain, dmc_ytrain, dmc_Xtest, dmc_ytest = self.dmc.split_dataset(dmc_X, dmc_y)
 
-        self.dmc.fit(dmc_Xtrain, dmc_ytrain)
-        dmc_prediction, _ = self.dmc.predict(dmc_Xtest)
+            self.dmc.fit(dmc_Xtrain, dmc_ytrain)
+            dmc_prediction, _ = self.dmc.predict(dmc_Xtest)
 
     def predict(self, Xtest, ytest):
         cpi_predictions, cpi_percentages = self.cpi.predict(Xtest)
@@ -111,7 +144,6 @@ class EarlyTextClassifier:
         return 0.0
 
     def score(self, y_true, cpi_prediction, cpi_percentages, dmc_prediction, prediction_time):
-        # TODO
         y_pred = []
         k = []
         num_docs = len(y_true)
@@ -160,3 +192,16 @@ class EarlyTextClassifier:
         pp.pprint(confusion_matrix_etc)
         print('*' * 30)
         return
+
+    def save_model(self):
+        if not self.is_loaded:
+            print('Saving model.')
+            existing_files = glob.glob(f'models/{self.dataset_name}/*.pickle')
+            existing_file_names = [int(os.path.splitext(os.path.basename(x))[0]) for x in existing_files]
+            max_file_name = max(existing_file_names) if existing_files != [] else 0
+
+            file_path = f'models/{self.dataset_name}/{max_file_name + 1}.pickle'
+
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, 'wb') as fp:
+                pickle.dump(self, fp)

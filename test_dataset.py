@@ -40,3 +40,4 @@ print(f'Xtrain.shape: {Xtrain.shape}; ytrain.shape: {ytrain.shape}; Xtest.shape:
 etc.fit(Xtrain, ytrain)
 cpi_percentages, cpi_predictions, dmc_prediction, prediction_time = etc.predict(Xtest, ytest)
 etc.score(ytest, cpi_predictions, cpi_percentages, dmc_prediction, prediction_time)
+etc.save_model()
