@@ -190,22 +190,27 @@ class EarlyTextClassifier:
                         error_score[idx] = costs['c_fp']
                 elif (y_true[idx] == 0) and (y_pred[idx] == 0):
                     error_score[idx] = 0
-        precision_etc = precision_score(y_true, y_pred, average='micro')
-        recall_etc = recall_score(y_true, y_pred, average='micro')
-        f1_etc = f1_score(y_true, y_pred, average='micro')
+        precision_etc = precision_score(y_true, y_pred, average='macro')
+        recall_etc = recall_score(y_true, y_pred, average='macro')
+        f1_etc = f1_score(y_true, y_pred, average='macro')
         accuracy_etc = accuracy_score(y_true, y_pred)
         erde_score = error_score.mean()
         confusion_matrix_etc = confusion_matrix(y_true, y_pred)
-        print('Score ETC:')
-        print('-'*30)
-        print(f'Precision: {precision_etc:.3}')
-        print(f'Recall: {recall_etc:.3}')
-        print(f'F1 Measure: {f1_etc:.3}')
-        print(f'Accuracy: {accuracy_etc:.3}')
-        print(f'ERDE o={time_threshold}: {erde_score:.3}')
+        print(f'{"Score ETC":^50}')
+        print('-'*50)
+        print(f'{"Precision average=macro:":>25} {precision_etc:.3}')
+        print(f'{"Recall average=macro:":>25} {recall_etc:.3}')
+        print(f'{"F1 Measure average=macro:":>25} {f1_etc:.3}')
+        print(f'{"Accuracy:":>25} {accuracy_etc:.3}')
+        print(f'{"ERDE o=":>21}{time_threshold:<3}: {erde_score:.3}')
+        print('-' * 50)
         print(classification_report(y_true, y_pred, target_names=self.unique_labels))
         # The reported averages are a prevalence-weighted macro-average across classes (equivalent to
         # precision_recall_fscore_support with average='weighted').
+        # 'weighted': Calculate metrics for each label, and find their average, weighted by support (the number of true
+        # instances for each label). This alters ‘macro’ to account for label imbalance; it can result in an F-score
+        # that is not between precision and recall.
+        print('-' * 50)
         print('Confusion matrix:')
         pp.pprint(confusion_matrix_etc)
 
