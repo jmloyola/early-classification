@@ -3,17 +3,15 @@ from context_information import ContextInformation
 from partial_information_classifier import PartialInformationClassifier
 from decision_classifier import DecisionClassifier
 import numpy as np
-from sklearn.metrics import recall_score, accuracy_score, f1_score, precision_score, confusion_matrix
+from sklearn.metrics import recall_score, accuracy_score, f1_score, precision_score, confusion_matrix, classification_report
 import pprint as pp
 import pickle
 import os
 
-GLOBAL_BASE_DIR = os.getcwd()
-
 
 class EarlyTextClassifier:
     def __init__(self, etc_kwargs, preprocess_kwargs, cpi_kwargs, context_kwargs, dmc_kwargs):
-        print("Early Text Classification")
+        self.dataset_path = etc_kwargs['dataset_path']
         self.dataset_name = etc_kwargs['dataset_name']
         self.initial_step = etc_kwargs['initial_step']
         self.step_size = etc_kwargs['step_size']
@@ -63,6 +61,7 @@ class EarlyTextClassifier:
 
     def print_params_information(self):
         print("Dataset name: {}".format(self.dataset_name))
+        print("Dataset path: {}".format(self.dataset_path))
         print('-'*80)
         print('Pre-process params:')
         pp.pprint(self.preprocess_kwargs)
@@ -76,13 +75,12 @@ class EarlyTextClassifier:
         print('DMC params:')
         pp.pprint(self.dmc_kwargs)
         print('-' * 80)
-        print('-' * 80)
 
     def preprocess_dataset(self):
         print('Pre-processing dataset')
         # Search dataset for the dataset, both training and test sets.
-        train_path = glob.glob('dataset/**/{}_train.txt'.format(self.dataset_name), recursive=True)[0]
-        test_path = glob.glob('dataset/**/{}_test.txt'.format(self.dataset_name), recursive=True)[0]
+        train_path = glob.glob(f'{self.dataset_path}/**/{self.dataset_name}_train.txt', recursive=True)[0]
+        test_path = glob.glob(f'{self.dataset_path}/**/{self.dataset_name}_test.txt', recursive=True)[0]
 
         self.dictionary = build_dict(path=train_path, **self.preprocess_kwargs)
 
@@ -152,7 +150,7 @@ class EarlyTextClassifier:
             print(f'{percentage} % --> {accuracy_dmc[i]:.3}')
         print('*' * 30)
 
-        return cpi_percentages, cpi_predictions, dmc_prediction, prediction_time
+        return cpi_percentages, cpi_predictions, dmc_prediction, prediction_time, dmc_y
 
     def time_penalization(self, k, penalization_type, time_threshold):
         if penalization_type == 'Losada-Crestani':
@@ -192,27 +190,28 @@ class EarlyTextClassifier:
                         error_score[idx] = costs['c_fp']
                 elif (y_true[idx] == 0) and (y_pred[idx] == 0):
                     error_score[idx] = 0
-        erde_score = error_score.mean()
         precision_etc = precision_score(y_true, y_pred, average='micro')
         recall_etc = recall_score(y_true, y_pred, average='micro')
         f1_etc = f1_score(y_true, y_pred, average='micro')
         accuracy_etc = accuracy_score(y_true, y_pred)
+        erde_score = error_score.mean()
         confusion_matrix_etc = confusion_matrix(y_true, y_pred)
-        print('*' * 30)
         print('Score ETC:')
-        print(' - '*10)
+        print('-'*30)
         print(f'Precision: {precision_etc:.3}')
         print(f'Recall: {recall_etc:.3}')
         print(f'F1 Measure: {f1_etc:.3}')
         print(f'Accuracy: {accuracy_etc:.3}')
         print(f'ERDE o={time_threshold}: {erde_score:.3}')
+        print(classification_report(y_true, y_pred, target_names=self.unique_labels))
+        # The reported averages are a prevalence-weighted macro-average across classes (equivalent to
+        # precision_recall_fscore_support with average='weighted').
         print('Confusion matrix:')
         pp.pprint(confusion_matrix_etc)
-        print('*' * 30)
 
     def save_model(self):
         if not self.is_loaded:
-            print('Saving model.')
+            print('Saving model')
             existing_files = glob.glob(f'models/{self.dataset_name}/*.pickle')
             existing_file_names = [int(os.path.splitext(os.path.basename(x))[0]) for x in existing_files]
             max_file_name = max(existing_file_names) if existing_files != [] else 0
@@ -233,12 +232,10 @@ def read_raw_dataset(path):
 
     Output: List of tuples (label, document)
     """
-    input_file_path = os.path.join(GLOBAL_BASE_DIR, path)
-
     # Store the dataset as a list of tuples (label, document).
     dataset = []
     i = 0
-    with open(input_file_path, 'r') as f:
+    with open(path, 'r') as f:
         for line in f:
             try:
                 label, document = line.split(maxsplit=1)
@@ -365,11 +362,9 @@ def get_labels(path, unique_labels=None):
     - final_labels is a numpy.array of integers containing the label of every document.
     - unique_labels is list containing every label (without repetition) ordered.
     """
-    input_file_path = os.path.join(GLOBAL_BASE_DIR, path)
-
     labels = []
     ul = [] if unique_labels is None else unique_labels
-    with open(input_file_path, 'r') as f:
+    with open(path, 'r') as f:
         for idx, line in enumerate(f):
             try:
                 label, _ = line.split(maxsplit=1)

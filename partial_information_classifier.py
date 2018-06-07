@@ -102,7 +102,8 @@ class PartialInformationClassifier:
                 partial_Xtest[idx, 0:pl] = Xtest[idx, 0:pl]
                 partial_Xtest[idx, pl] = -1
             partial_Xtest = self.get_document_representation(partial_Xtest)
-            print(f'cpi_partial[{p}]_Xtest_representation.shape: {partial_Xtest.shape}')
+            if p ==self.initial_step:
+                print(f'cpi_partial[i]_Xtest_representation.shape: {partial_Xtest.shape}')
             predictions_test = self.clf.predict(partial_Xtest)
 
             percentages.append(p)
