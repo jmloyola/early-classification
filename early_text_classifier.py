@@ -143,7 +143,7 @@ class EarlyTextClassifier:
         dmc_X, dmc_y = self.ci.generate_dmc_dataset(Xtest, ytest, cpi_predictions)
         dmc_prediction, prediction_time = self.dmc.predict(dmc_X)
 
-        accuracy_dmc = np.sum(dmc_prediction == dmc_y, axis=1) / dmc_y.size
+        accuracy_dmc = np.sum(dmc_prediction == dmc_y, axis=1) / dmc_y.shape[1]
         print('*' * 30)
         print('Accuracy of DMC for each percentage:')
         for i, percentage in enumerate(cpi_percentages):
@@ -266,7 +266,7 @@ def build_dict(path, min_word_length=0, max_number_words=None, representation='w
     Inputs:
     - path: path to the file containing the raw dataset.
     - min_word_length: minimum number of characters that every word in the new dictionary must have.
-    - max_number_words: maximum number of words for the dictionary.
+    - max_number_words: maximum number of words for the dictionary. Use None to consider all the term in training.
     - representation: document representation ['word_tf', 'word_tf_idf', 'character_3_gram_tf',
                                                'character_3_gram_tf_idf', 'word_3_gram_tf', 'word_3_gram_tf_idf'].
 
@@ -306,7 +306,7 @@ def build_dict(path, min_word_length=0, max_number_words=None, representation='w
     worddict = dict()
 
     for idx, ss in enumerate(sorted_idx):
-        if max_number_words <= idx:
+        if (max_number_words is not None) and (max_number_words <= idx):
             print(f'Considering only {max_number_words} unique terms')
             break
         worddict[keys[ss]] = idx+1  # leave 0 (UNK)
