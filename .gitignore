@@ -5,3 +5,4 @@ plots/
 results/
 __pycache__/
 .idea/
+notebooks/.ipynb_checkpoints/
