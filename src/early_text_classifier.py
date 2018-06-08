@@ -132,24 +132,8 @@ class EarlyTextClassifier:
     def predict(self, Xtest, ytest):
         print('Predicting with the EarlyTextClassifier model')
         cpi_predictions, cpi_percentages = self.cpi.predict(Xtest)
-
-        accuracy_cpi = np.sum(cpi_predictions == ytest, axis=1) / ytest.size
-        print('*'*30)
-        print('Accuracy of CPI for each percentage:')
-        for i, percentage in enumerate(cpi_percentages):
-            print(f'{percentage:3} % --> {accuracy_cpi[i]:.3}')
-        print('*' * 30)
-
         dmc_X, dmc_y = self.ci.generate_dmc_dataset(Xtest, ytest, cpi_predictions)
         dmc_prediction, prediction_time = self.dmc.predict(dmc_X)
-
-        accuracy_dmc = np.sum(dmc_prediction == dmc_y, axis=1) / dmc_y.shape[1]
-        print('*' * 30)
-        print('Accuracy of DMC for each percentage:')
-        for i, percentage in enumerate(cpi_percentages):
-            print(f'{percentage:3} % --> {accuracy_dmc[i]:.3}')
-        print('*' * 30)
-
         return cpi_percentages, cpi_predictions, dmc_prediction, prediction_time, dmc_y
 
     def time_penalization(self, k, penalization_type, time_threshold):
