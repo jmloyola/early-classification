@@ -5,6 +5,7 @@ from sklearn.naive_bayes import BernoulliNB
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import LinearSVC
+from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -30,6 +31,8 @@ class DecisionClassifier:
             self.clf = KNeighborsClassifier(**self.model_params)
         elif self.model_type == 'LinearSVC':
             self.clf = LinearSVC(**self.model_params)
+        elif self.model_type == 'SVC':
+            self.clf = SVC(**self.model_params)
         elif self.model_type == 'LogisticRegression':
             self.clf = LogisticRegression(**self.model_params)
         elif self.model_type == 'MLPClassifier':
