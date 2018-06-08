@@ -137,7 +137,7 @@ class EarlyTextClassifier:
         print('*'*30)
         print('Accuracy of CPI for each percentage:')
         for i, percentage in enumerate(cpi_percentages):
-            print(f'{percentage} % --> {accuracy_cpi[i]:.3}')
+            print(f'{percentage:3} % --> {accuracy_cpi[i]:.3}')
         print('*' * 30)
 
         dmc_X, dmc_y = self.ci.generate_dmc_dataset(Xtest, ytest, cpi_predictions)
@@ -147,7 +147,7 @@ class EarlyTextClassifier:
         print('*' * 30)
         print('Accuracy of DMC for each percentage:')
         for i, percentage in enumerate(cpi_percentages):
-            print(f'{percentage} % --> {accuracy_dmc[i]:.3}')
+            print(f'{percentage:3} % --> {accuracy_dmc[i]:.3}')
         print('*' * 30)
 
         return cpi_percentages, cpi_predictions, dmc_prediction, prediction_time, dmc_y
