@@ -25,15 +25,13 @@ The jupyter notebook [example.ipynb](https://github.com/jmloyola/early-classific
     * train_dataset_percentage: percentage of documents to use for training cpi.
     * test_dataset_percentage: percentage of documents to use for testing cpi.
     * doc_rep: document representation to use. For now the only representation available is `term_frec`.
-    * model_type: scikit-learn model to use.
-    * cpi_model_params: parameters of the model.
+    * cpi_clf: classifier for the cpi module. It must have methods `fit(X, y)`, `predict(X)` and `get_params()` similar to those in the scikit-learn API.
 * context_kwargs : dict
     * number_most_common: number of most common terms of each category to use.
 * dmc_kwargs : dict
     * train_dataset_percentage: percentage of documents to use for training dmc.
     * test_dataset_percentage: percentage of documents to use for testing dmc.
-    * model_type: scikit-learn model to use.
-    * dmc_model_params: parameters of the model.
+    * dmc_clf: classifier for the dmc module. It must have methods `fit(X, y)`, `predict(X)` and `get_params()` similar to those in the scikit-learn API.
 
 ## Dependencies
 This code was developed and tested on Python 3.6 and depends on:

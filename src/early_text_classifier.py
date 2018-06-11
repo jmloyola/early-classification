@@ -37,9 +37,14 @@ class EarlyTextClassifier:
                 (self.initial_step == model.initial_step) and \
                 (self.step_size == model.step_size) and \
                 (self.preprocess_kwargs == model.preprocess_kwargs) and \
-                (self.cpi_kwargs == model.cpi_kwargs) and \
+                (self.cpi_kwargs['train_dataset_percentage'] == model.cpi_kwargs['train_dataset_percentage']) and \
+                (self.cpi_kwargs['test_dataset_percentage'] == model.cpi_kwargs['test_dataset_percentage']) and \
+                (self.cpi_kwargs['doc_rep'] == model.cpi_kwargs['doc_rep']) and \
+                (self.cpi_kwargs['cpi_clf'].get_params() == model.cpi_kwargs['cpi_clf'].get_params()) and \
                 (self.context_kwargs == model.context_kwargs) and \
-                (self.dmc_kwargs == model.dmc_kwargs):
+                (self.dmc_kwargs['train_dataset_percentage'] == model.dmc_kwargs['train_dataset_percentage']) and \
+                (self.dmc_kwargs['test_dataset_percentage'] == model.dmc_kwargs['test_dataset_percentage']) and \
+                (self.dmc_kwargs['dmc_clf'].get_params() == model.dmc_kwargs['dmc_clf'].get_params()):
             return True
         else:
             return False
