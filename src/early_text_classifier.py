@@ -3,7 +3,8 @@ from context_information import ContextInformation
 from partial_information_classifier import PartialInformationClassifier
 from decision_classifier import DecisionClassifier
 import numpy as np
-from sklearn.metrics import recall_score, accuracy_score, f1_score, precision_score, confusion_matrix, classification_report
+from sklearn.metrics import recall_score, accuracy_score, f1_score, precision_score, confusion_matrix,\
+    classification_report
 import pprint as pp
 import pickle
 import os
@@ -159,7 +160,7 @@ class EarlyTextClassifier:
         y_pred = np.array(y_pred)
         k = np.array(k)
 
-        error_score = np.zeros_like(y_true)
+        error_score = np.zeros(num_docs)
         if len(self.unique_labels) > 2:
             for idx in range(num_docs):
                 if y_true[idx] == y_pred[idx]:
@@ -198,9 +199,9 @@ class EarlyTextClassifier:
             print(classification_report(y_true, y_pred, target_names=self.unique_labels))
             # The reported averages are a prevalence-weighted macro-average across classes (equivalent to
             # precision_recall_fscore_support with average='weighted').
-            # 'weighted': Calculate metrics for each label, and find their average, weighted by support (the number of true
-            # instances for each label). This alters ‘macro’ to account for label imbalance; it can result in an F-score
-            # that is not between precision and recall.
+            # 'weighted': Calculate metrics for each label, and find their average, weighted by support (the number of
+            # true instances for each label). This alters ‘macro’ to account for label imbalance; it can result in an
+            # F-score that is not between precision and recall.
             print('-' * 50)
             print('Confusion matrix:')
             pp.pprint(confusion_matrix_etc)
