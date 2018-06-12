@@ -11,7 +11,8 @@ import os
 
 
 class EarlyTextClassifier:
-    def __init__(self, etc_kwargs, preprocess_kwargs, cpi_kwargs, context_kwargs, dmc_kwargs):
+    def __init__(self, etc_kwargs, preprocess_kwargs, cpi_kwargs, context_kwargs, dmc_kwargs, unique_labels=None,
+                 dictionary=None):
         self.dataset_path = etc_kwargs['dataset_path']
         self.dataset_name = etc_kwargs['dataset_name']
         self.initial_step = etc_kwargs['initial_step']
@@ -24,11 +25,11 @@ class EarlyTextClassifier:
         self.cpi_kwargs['step_size'] = self.step_size
         self.context_kwargs['initial_step'] = self.initial_step
         self.context_kwargs['step_size'] = self.step_size
-        self.dictionary = None
+        self.dictionary = dictionary
         self.ci = None
         self.cpi = None
         self.dmc = None
-        self.unique_labels = None
+        self.unique_labels = unique_labels
         self.is_loaded = False
 
         self.load_model()
@@ -206,7 +207,7 @@ class EarlyTextClassifier:
             print('Confusion matrix:')
             pp.pprint(confusion_matrix_etc)
 
-        return erde_score
+        return precision_etc, recall_etc, f1_etc, accuracy_etc, erde_score
 
     def save_model(self):
         if not self.is_loaded:
@@ -220,6 +221,8 @@ class EarlyTextClassifier:
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             with open(file_path, 'wb') as fp:
                 pickle.dump(self, fp)
+        else:
+            print('Model already in disk')
 
 
 def read_raw_dataset(path):
