@@ -4,7 +4,7 @@ from sklearn.model_selection import ShuffleSplit
 
 
 class PartialInformationClassifier:
-    def __init__(self, cpi_kwargs, dictionary):
+    def __init__(self, cpi_kwargs, dictionary, verbose=True):
         self.random_state = np.random.RandomState(1234)
         self.train_dataset_percentage = cpi_kwargs['train_dataset_percentage']
         self.test_dataset_percentage = cpi_kwargs['test_dataset_percentage']
@@ -13,9 +13,14 @@ class PartialInformationClassifier:
         self.initial_step = cpi_kwargs['initial_step']
         self.step_size = cpi_kwargs['step_size']
         self.clf = cpi_kwargs['cpi_clf']
+        self.verbose = verbose
+
+    def verboseprint(self, *args, **kwargs):
+        if self.verbose:
+            print(*args, **kwargs)
 
     def split_dataset(self, Xtrain, ytrain):
-        print("Splitting preprocessed dataset for the PartialInformationClassifier")
+        self.verboseprint("Splitting preprocessed dataset for the PartialInformationClassifier")
         ss = ShuffleSplit(train_size=self.train_dataset_percentage, test_size=self.test_dataset_percentage,
                           random_state=self.random_state)
         idx_train, idx_test = next(ss.split(X=Xtrain, y=ytrain))
@@ -45,13 +50,13 @@ class PartialInformationClassifier:
         return sparse_matrix
 
     def fit(self, Xtrain, ytrain):
-        print("Training PartialInformationClassifier")
+        self.verboseprint("Training PartialInformationClassifier")
         Xtrain = self.get_document_representation(Xtrain)
-        print(f'cpi_Xtrain_representation.shape: {Xtrain.shape}')
+        self.verboseprint(f'cpi_Xtrain_representation.shape: {Xtrain.shape}')
         self.clf.fit(Xtrain, ytrain)
 
     def predict(self, Xtest):
-        print("Predicting with PartialInformationClassifier")
+        self.verboseprint("Predicting with PartialInformationClassifier")
         num_docs = len(Xtest)
         # Remember that we used the number -1 to represent the end of the document.
         # Here we search for this token.
@@ -70,7 +75,7 @@ class PartialInformationClassifier:
                 partial_Xtest[idx, pl] = -1
             partial_Xtest = self.get_document_representation(partial_Xtest)
             if p ==self.initial_step:
-                print(f'cpi_partial[i]_Xtest_representation.shape: {partial_Xtest.shape}')
+                self.verboseprint(f'cpi_partial[i]_Xtest_representation.shape: {partial_Xtest.shape}')
             predictions_test = self.clf.predict(partial_Xtest)
 
             percentages.append(p)

@@ -1,4 +1,5 @@
 import glob
+from preprocess_dataset import PreprocessDataset
 from context_information import ContextInformation
 from partial_information_classifier import PartialInformationClassifier
 from decision_classifier import DecisionClassifier
@@ -12,7 +13,7 @@ import os
 
 class EarlyTextClassifier:
     def __init__(self, etc_kwargs, preprocess_kwargs, cpi_kwargs, context_kwargs, dmc_kwargs, unique_labels=None,
-                 dictionary=None):
+                 dictionary=None, verbose=True):
         self.dataset_path = etc_kwargs['dataset_path']
         self.dataset_name = etc_kwargs['dataset_name']
         self.initial_step = etc_kwargs['initial_step']
@@ -31,8 +32,13 @@ class EarlyTextClassifier:
         self.dmc = None
         self.unique_labels = unique_labels
         self.is_loaded = False
+        self.verbose = verbose
 
         self.load_model()
+
+    def verboseprint(self, *args, **kwargs):
+        if self.verbose:
+            print(*args, **kwargs)
 
     def has_same_parameters(self, model):
         if (self.dataset_name == model.dataset_name) and \
@@ -62,7 +68,7 @@ class EarlyTextClassifier:
             with open(file, 'rb') as f:
                 loaded_model = pickle.load(f)
                 if self.has_same_parameters(loaded_model):
-                    print('Model already trained. Loading it.')
+                    self.verboseprint('Model already trained. Loading it.')
                     self.copy_attributes(loaded_model)
                     self.is_loaded = True
 
@@ -84,60 +90,61 @@ class EarlyTextClassifier:
         print('-' * 80)
 
     def preprocess_dataset(self):
-        print('Pre-processing dataset')
+        self.verboseprint('Pre-processing dataset')
         # Search dataset for the dataset, both training and test sets.
         train_path = glob.glob(f'{self.dataset_path}/**/{self.dataset_name}_train.txt', recursive=True)[0]
         test_path = glob.glob(f'{self.dataset_path}/**/{self.dataset_name}_test.txt', recursive=True)[0]
 
-        self.dictionary = build_dict(path=train_path, **self.preprocess_kwargs)
+        prep_data = PreprocessDataset(self.preprocess_kwargs, self.verbose)
+        self.dictionary = prep_data.build_dict(train_path)
 
-        Xtrain = transform_into_numeric_array(path=train_path, dictionary=self.dictionary)
-        ytrain, self.unique_labels = get_labels(path=train_path)
+        Xtrain = prep_data.transform_into_numeric_array(train_path)
+        ytrain, self.unique_labels = prep_data.get_labels(train_path)
 
-        Xtest = transform_into_numeric_array(path=test_path, dictionary=self.dictionary)
-        ytest, _ = get_labels(path=test_path, unique_labels=self.unique_labels)
+        Xtest = prep_data.transform_into_numeric_array(test_path)
+        ytest, _ = prep_data.get_labels(test_path)
 
-        print(f'Xtrain.shape: {Xtrain.shape}')
-        print(f'ytrain.shape: {ytrain.shape}')
-        print(f'Xtest.shape: {Xtest.shape}')
-        print(f'ytest.shape: {ytest.shape}')
+        self.verboseprint(f'Xtrain.shape: {Xtrain.shape}')
+        self.verboseprint(f'ytrain.shape: {ytrain.shape}')
+        self.verboseprint(f'Xtest.shape: {Xtest.shape}')
+        self.verboseprint(f'ytest.shape: {ytest.shape}')
 
         return Xtrain, ytrain, Xtest, ytest
 
     def fit(self, Xtrain, ytrain):
         if not self.is_loaded:
-            print('Training EarlyTextClassifier model')
-            self.ci = ContextInformation(self.context_kwargs, self.dictionary)
+            self.verboseprint('Training EarlyTextClassifier model')
+            self.ci = ContextInformation(self.context_kwargs, self.dictionary, self.verbose)
             self.ci.get_training_information(Xtrain, ytrain)
 
-            self.cpi = PartialInformationClassifier(self.cpi_kwargs, self.dictionary)
+            self.cpi = PartialInformationClassifier(self.cpi_kwargs, self.dictionary, self.verbose)
             cpi_Xtrain, cpi_ytrain, cpi_Xtest, cpi_ytest = self.cpi.split_dataset(Xtrain, ytrain)
 
-            print(f'cpi_Xtrain.shape: {cpi_Xtrain.shape}')
-            print(f'cpi_ytrain.shape: {cpi_ytrain.shape}')
-            print(f'cpi_Xtest.shape: {cpi_Xtest.shape}')
-            print(f'cpi_ytest.shape: {cpi_ytest.shape}')
+            self.verboseprint(f'cpi_Xtrain.shape: {cpi_Xtrain.shape}')
+            self.verboseprint(f'cpi_ytrain.shape: {cpi_ytrain.shape}')
+            self.verboseprint(f'cpi_Xtest.shape: {cpi_Xtest.shape}')
+            self.verboseprint(f'cpi_ytest.shape: {cpi_ytest.shape}')
 
             self.cpi.fit(cpi_Xtrain, cpi_ytrain)
             cpi_predictions, cpi_percentages = self.cpi.predict(cpi_Xtest)
 
             dmc_X, dmc_y = self.ci.generate_dmc_dataset(cpi_Xtest, cpi_ytest, cpi_predictions)
 
-            self.dmc = DecisionClassifier(self.dmc_kwargs)
+            self.dmc = DecisionClassifier(self.dmc_kwargs, self.verbose)
             dmc_Xtrain, dmc_ytrain, dmc_Xtest, dmc_ytest = self.dmc.split_dataset(dmc_X, dmc_y)
 
-            print(f'dmc_Xtrain.shape: {dmc_Xtrain.shape}')
-            print(f'dmc_ytrain.shape: {dmc_ytrain.shape}')
-            print(f'dmc_Xtest.shape: {dmc_Xtest.shape}')
-            print(f'dmc_ytest.shape: {dmc_ytest.shape}')
+            self.verboseprint(f'dmc_Xtrain.shape: {dmc_Xtrain.shape}')
+            self.verboseprint(f'dmc_ytrain.shape: {dmc_ytrain.shape}')
+            self.verboseprint(f'dmc_Xtest.shape: {dmc_Xtest.shape}')
+            self.verboseprint(f'dmc_ytest.shape: {dmc_ytest.shape}')
 
             self.dmc.fit(dmc_Xtrain, dmc_ytrain)
             dmc_prediction, _ = self.dmc.predict(dmc_Xtest)
         else:
-            print('EarlyTextClassifier model already trained')
+            self.verboseprint('EarlyTextClassifier model already trained')
 
     def predict(self, Xtest, ytest):
-        print('Predicting with the EarlyTextClassifier model')
+        self.verboseprint('Predicting with the EarlyTextClassifier model')
         cpi_predictions, cpi_percentages = self.cpi.predict(Xtest)
         dmc_X, dmc_y = self.ci.generate_dmc_dataset(Xtest, ytest, cpi_predictions)
         dmc_prediction, prediction_time = self.dmc.predict(dmc_X)
@@ -211,7 +218,7 @@ class EarlyTextClassifier:
 
     def save_model(self):
         if not self.is_loaded:
-            print('Saving model')
+            self.verboseprint('Saving model')
             existing_files = glob.glob(f'models/{self.dataset_name}/*.pickle')
             existing_file_names = [int(os.path.splitext(os.path.basename(x))[0]) for x in existing_files]
             max_file_name = max(existing_file_names) if existing_files != [] else 0
@@ -222,167 +229,4 @@ class EarlyTextClassifier:
             with open(file_path, 'wb') as fp:
                 pickle.dump(self, fp)
         else:
-            print('Model already in disk')
-
-
-def read_raw_dataset(path):
-    """"
-    Read raw dataset and returns a list of tuples (label, document) for every document in the dataset.
-
-    Inputs:
-    - path: path to the file of the raw dataset
-
-    Output: List of tuples (label, document)
-    """
-    # Store the dataset as a list of tuples (label, document).
-    dataset = []
-    i = 0
-    with open(path, 'r') as f:
-        for line in f:
-            try:
-                label, document = line.split(maxsplit=1)
-            except:
-                print(
-                    'Error while reading dataset: {}. The {}º line does not follow the form \"label\tdocument\"'.format(
-                        path, i))
-                continue
-            # Remove new line character from document.
-            document = document[:-1]
-            dataset.append((label, document))
-            i = i + 1
-    return dataset
-
-
-def build_dict(path, min_word_length=0, max_number_words=None, representation='word_tf'):
-    """
-    Returns a dictionary with the words of the train dataset.
-    The dictionary contains the most relevant words with an index indicating its position in the list of number of times
-    each word appears.
-    It should be noted that the value zero of the index is reserved for the words UNKOWN.
-
-    Inputs:
-    - path: path to the file containing the raw dataset.
-    - min_word_length: minimum number of characters that every word in the new dictionary must have.
-    - max_number_words: maximum number of words for the dictionary. Use None to consider all the term in training.
-    - representation: document representation ['word_tf', 'word_tf_idf', 'character_3_gram_tf',
-                                               'character_3_gram_tf_idf', 'word_3_gram_tf', 'word_3_gram_tf_idf'].
-
-    Output: dictionary containing the most relevant words in the corpus ordered by the amount of times they appear.
-    """
-    dataset = read_raw_dataset(path)
-    documents = [x[1] for x in dataset]
-
-    print('Building dictionary')
-    wordcount = dict()
-    for ss in documents:
-        words = ss.strip().lower().split()
-        for w in words:
-            if len(w) < min_word_length:
-                continue
-            if w not in wordcount:
-                wordcount[w] = 1
-            else:
-                wordcount[w] += 1
-
-    # Para Python 3 hace falta transformar en lista. Por ejemplo: list(wordcount.values())
-    counts = list(wordcount.values())
-    keys = list(wordcount.keys())
-
-    print(np.sum(counts), ' total words ', len(keys), ' unique words')
-
-    # Hace un slicing del arreglo de counts ordenados.
-    # En este caso el slicing toma todos los elementos, pero el paso es negativo, indicando que lo procesa en el orden
-    # inverso.
-    # numpy.argsort(counts)[::-1] es lo mismo que numpy.argsort(counts)[0:len(counts):-1]
-    # Assume n is the number of elements in the dimension being sliced. Then, if i is not given it defaults to 0 for
-    # k > 0 and n - 1 for k < 0 . If j is not given it defaults to n for k > 0 and -n-1 for k < 0 . If k is not given
-    # it defaults to 1. Note that :: is the same as : and means select all indices along this axis.
-    # https://docs.scipy.org/doc/numpy/reference/arrays.indexing.html
-    sorted_idx = np.argsort(counts)[::-1]
-
-    worddict = dict()
-
-    for idx, ss in enumerate(sorted_idx):
-        if (max_number_words is not None) and (max_number_words <= idx):
-            print(f'Considering only {max_number_words} unique terms')
-            break
-        worddict[keys[ss]] = idx+1  # leave 0 (UNK)
-    return worddict
-
-
-def transform_into_numeric_array(path, dictionary):
-    """
-    Given the path to a dataset, this function transform a list of documents with a numpy array of shape (num_docs,
-    max_length+1), where the words are replaced for the index given by the
-    dictionary.
-
-    Inputs:
-    - path: path to the file containing the raw dataset.
-    - dictionary: dictionary with the words that matter.
-
-    Output: Numpy array of shape (num_docs, max_length+1) of documents with the words replaced for the index given by
-    the dictionary.
-
-    Note: The index the dictionary gives is the position of the word if we were to arrange them from more to less taking
-    into account the number of occurrences of every words in the training dataset.
-    The number 0 is reserved for the UNKOWN token and the number -1 is reserved to indicate the end of the document.
-
-    """
-    dataset = read_raw_dataset(path)
-    num_docs = len(dataset)
-
-    seqs = [None] * num_docs
-    max_length = 0
-    for idx, line in enumerate(dataset):
-        document = line[1]
-        words = document.strip().lower().split()
-        seqs[idx] = [dictionary[w] if w in dictionary else 0 for w in words]
-        length_doc = len(words)
-        if max_length < length_doc:
-            max_length = length_doc
-
-    preprocess_dataset = -2*np.ones((num_docs, max_length+1), dtype=int)
-    for idx in range(num_docs):
-        length_doc = len(seqs[idx])
-        preprocess_dataset[idx, 0:length_doc] = seqs[idx]
-        preprocess_dataset[idx, length_doc] = -1
-
-    return preprocess_dataset
-
-
-def get_labels(path, unique_labels=None):
-    """"
-    Read raw dataset and returns a tuple (final_labels, unique_labels).
-    final_labels is a numpy.array of integers containing the label of every document.
-    unique_labels is list containing every label (without repetition) ordered. Only used for the test set.
-
-    Inputs:
-    - path: path to the file of the raw dataset
-    - unique_labels: list containing every label (without repetition) ordered.
-
-    Output: tuple (final_labels, unique_labels).
-    - final_labels is a numpy.array of integers containing the label of every document.
-    - unique_labels is list containing every label (without repetition) ordered.
-    """
-    labels = []
-    ul = [] if unique_labels is None else unique_labels
-    with open(path, 'r') as f:
-        for idx, line in enumerate(f):
-            try:
-                label, _ = line.split(maxsplit=1)
-            except RuntimeWarning:  # Arbitrary exception type
-                print(
-                    'Error while reading dataset: {}. The {}º line does not follow the form \"label\tdocument\"'.format(
-                        path, idx))
-                continue
-            labels.append(label)
-            if (unique_labels is None) and (label not in ul):
-                ul.append(label)
-
-        ul.sort()  # Sort list of unique_labels.
-    num_documents = len(labels)
-    final_labels = np.empty([num_documents], dtype=int)
-    for idx, l in enumerate(labels):
-        final_labels[idx] = ul.index(l)
-
-    return final_labels, ul
+            self.verboseprint('Model already in disk')

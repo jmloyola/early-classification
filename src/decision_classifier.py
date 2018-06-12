@@ -2,18 +2,23 @@ import numpy as np
 
 
 class DecisionClassifier:
-    def __init__(self, dmc_kwargs):
+    def __init__(self, dmc_kwargs, verbose=True):
         self.train_dataset_percentage = dmc_kwargs['train_dataset_percentage']
         self.test_dataset_percentage = dmc_kwargs['test_dataset_percentage']
         self.clf = dmc_kwargs['dmc_clf']
+        self.verbose = verbose
+
+    def verboseprint(self, *args, **kwargs):
+        if self.verbose:
+            print(*args, **kwargs)
 
     def split_dataset(self, X, y):
-        print("Splitting preprocessed dataset for the DecisionClassifier")
+        self.verboseprint("Splitting preprocessed dataset for the DecisionClassifier")
         num_steps, num_docs, num_features = X.shape
         num_training = int(np.round(num_docs * self.train_dataset_percentage))
         num_test = int(np.round(num_docs * self.test_dataset_percentage))
         if num_docs < num_training + num_test:
-            print("The training-test splits must sum to one or less.")
+            self.verboseprint("The training-test splits must sum to one or less.")
         return X[:, 0:num_training, :], y[:, 0:num_training], X[:, num_training:, :], y[:, num_training:]
 
     def flatten_dataset(self, X, y):
@@ -23,12 +28,12 @@ class DecisionClassifier:
         return new_X, new_y
 
     def fit(self, Xtrain, ytrain):
-        print("Training PartialInformationClassifier")
+        self.verboseprint("Training PartialInformationClassifier")
         Xtrain, ytrain = self.flatten_dataset(Xtrain, ytrain)
         self.clf.fit(Xtrain, ytrain)
 
     def predict(self, Xtest):
-        print("Predicting with DecisionClassifier")
+        self.verboseprint("Predicting with DecisionClassifier")
         num_steps, num_docs, num_features = Xtest.shape
         predictions_list = []
         # We initialise the time_to_stop_reading array with the value (num_steps - 1) because if dmc never decides to
