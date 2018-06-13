@@ -193,7 +193,7 @@ class EarlyTextClassifier:
         recall_etc = recall_score(y_true, y_pred, average='macro')
         f1_etc = f1_score(y_true, y_pred, average='macro')
         accuracy_etc = accuracy_score(y_true, y_pred)
-        erde_score = error_score.mean()
+        ede_score = error_score.mean()
         confusion_matrix_etc = confusion_matrix(y_true, y_pred)
         if print_ouput:
             print(f'{"Score ETC":^50}')
@@ -202,7 +202,7 @@ class EarlyTextClassifier:
             print(f'{"Recall average=macro:":>25} {recall_etc:.3}')
             print(f'{"F1 Measure average=macro:":>25} {f1_etc:.3}')
             print(f'{"Accuracy:":>25} {accuracy_etc:.3}')
-            print(f'{"ERDE o=":>21}{time_threshold:<3}: {erde_score:.3}')
+            print(f'{"EDE o=":>21}{time_threshold:<3}: {ede_score:.3}')
             print('-' * 50)
             print(classification_report(y_true, y_pred, target_names=self.unique_labels))
             # The reported averages are a prevalence-weighted macro-average across classes (equivalent to
@@ -214,7 +214,7 @@ class EarlyTextClassifier:
             print('Confusion matrix:')
             pp.pprint(confusion_matrix_etc)
 
-        return precision_etc, recall_etc, f1_etc, accuracy_etc, erde_score
+        return precision_etc, recall_etc, f1_etc, accuracy_etc, ede_score
 
     def save_model(self):
         if not self.is_loaded:
