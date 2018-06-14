@@ -25,7 +25,7 @@ The jupyter notebook [example.ipynb](https://github.com/jmloyola/early-classific
     * train_dataset_percentage: percentage of documents to use for training cpi.
     * test_dataset_percentage: percentage of documents to use for testing cpi.
     * doc_rep: document representation to use. For now the only representation available is `term_frec`.
-    * cpi_clf: classifier for the cpi module. It must have methods `fit(X, y)`, `predict(X)` and `get_params()` similar to those in the scikit-learn API.
+    * cpi_clf: classifier for the cpi module. It must have methods `fit(X, y)`, `predict(X)` and `get_params()` similar to those in the scikit-learn API. The method `fit` should accept a sparse matrix as the parameter `X`.
 * context_kwargs : dict
     * number_most_common: number of most common terms of each category to use.
 * dmc_kwargs : dict
