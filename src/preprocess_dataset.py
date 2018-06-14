@@ -50,7 +50,7 @@ class PreprocessDataset:
         Inputs:
         - path: path to the file containing the raw dataset.
         - min_word_length: minimum number of characters that every word in the new dictionary must have.
-        - max_number_words: maximum number of words for the dictionary. Use None to consider all the term in training.
+        - max_number_words: maximum number of words for the dictionary. Use 'all' to consider all the terms in training.
         - representation: document representation ['word_tf', 'word_tf_idf', 'character_3_gram_tf',
                                                    'character_3_gram_tf_idf', 'word_3_gram_tf', 'word_3_gram_tf_idf'].
 
@@ -90,8 +90,8 @@ class PreprocessDataset:
         worddict = dict()
 
         for idx, ss in enumerate(sorted_idx):
-            if (self.max_number_words is not None) and (self.max_number_words <= idx):
-                self.verboseprint(f'Considering only {self.max_number_words} unique terms')
+            if (self.max_number_words != 'all') and (self.max_number_words <= idx):
+                self.verboseprint(f'Considering only {self.max_number_words} unique terms plus the UNKOWN token')
                 break
             worddict[keys[ss]] = idx + 1  # leave 0 (UNK)
         self.dictionary = worddict

@@ -20,7 +20,7 @@ The jupyter notebook [example.ipynb](https://github.com/jmloyola/early-classific
     * step_size: percentage of the document to read in each step.
 * preprocess_kwargs : dict
     * min_word_length: number of letters the terms must have to be consider.
-    * max_number_words: maximum number of words to consider. In case you want to include all words use `None`.
+    * max_number_words: maximum number of words to consider. In case you want to include all words use `'all'`.
 * cpi_kwargs : dict
     * train_dataset_percentage: percentage of documents to use for training cpi.
     * test_dataset_percentage: percentage of documents to use for testing cpi.
